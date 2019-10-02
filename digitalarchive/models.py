@@ -31,13 +31,16 @@ class Subject(Resource):
     # Private fields
     endpoint: str = "subject"
 
+
 @dataclass
 class Language(Resource):
     name: str
 
+
 @dataclass
 class Asset:
     """todo: Figure out endpoint logic for media files/translations/trascripts"""
+
     id: str
     filename: str
     content_type: str
@@ -45,7 +48,6 @@ class Asset:
     asset_id: str
     source_created_at: str
     source_updated_at: str
-
 
 
 @dataclass
@@ -63,9 +65,8 @@ class Translation(Asset):
 
 @dataclass
 class MediaFile(Asset):
-    path: str   
+    path: str
     pass
-
 
 
 @dataclass
@@ -96,13 +97,15 @@ class Collection:
     id: str
     name: str
     slug: str
-    parent: Optional[Any] = None  # TODO: This should be Collection, figure out how to do it.
+    parent: Optional[
+        Any
+    ] = None  # TODO: This should be Collection, figure out how to do it.
     endpoint: str = "collection"
 
     @classmethod
     def match(cls, **kwargs) -> ResourceMatcher:
         """Custom matcher limits results to correct model."""
-        kwargs['model'] = "Collection"
+        kwargs["model"] = "Collection"
         return ResourceMatcher(cls, **kwargs)
 
 
@@ -163,7 +166,9 @@ class Document(Resource):
     pdf_generated_at: Optional[str] = None
     date_range_start: Optional[str] = None
     sort_string_by_coverage: Optional[str] = None
-    main_src: Optional[Any] = None  # TODO: Never seen one of these in the while, so not sure
+    main_src: Optional[
+        Any
+    ] = None  # TODO: Never seen one of these in the while, so not sure
     model: Optional[str] = None
 
     # Optional Lists:
@@ -178,7 +183,9 @@ class Document(Resource):
     creators: List[Contributor] = field(default_factory=list)
     original_coverages: List[Coverage] = field(default_factory=list)
     collections: List[Collection] = field(default_factory=list)
-    attachments: List[Any] = field(default_factory=list) # TODO: Should be "document" -- fix.
+    attachments: List[Any] = field(
+        default_factory=list
+    )  # TODO: Should be "document" -- fix.
     links: List[Any] = field(default_factory=list)  # TODO: Should be "document" -- fix.
     repositories: List[Repository] = field(default_factory=list)
     publishers: List[Publisher] = field(default_factory=list)
@@ -211,5 +218,5 @@ class Document(Resource):
             * q: a str search term.
 
         """
-        kwargs['model'] = "Record"
+        kwargs["model"] = "Record"
         return ResourceMatcher(cls, **kwargs)
