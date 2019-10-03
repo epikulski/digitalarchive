@@ -35,25 +35,49 @@ class DigitalArchive:
 
     @staticmethod
     def search(endpoint: str, params: dict = None) -> List[dict]:
-        """Search for DA records by endpoint and term."""
+        """
+        Search for DA records by endpoint and term.
 
-        # Transform search terms for api call. API matches on inconsistent things.
+        We have to massage the params we pass to the search endpoint as the API matches on
+        inconsistent things.
 
-        # Handle record searches
-        if endpoint == "record":
-            params["q"] = params[""]
+        TODO: Refactor this to be sensible.
+        """
 
-        # Handle non record/collection searches.
+        # Handle record searches. We transform some of the parameters
+        if endpoint in ["record", "collection"]:
+
+            # concatenate all of the keyword fields into the 'q' param
+            keywords = []
+            for field in ["name", "title", "description", "slug"]:
+                if params.get(field) is not None:
+                    keywords.append(params.get(field))
+            params["q"] = " ".join(keywords)
+
+            # Strip out fields the search endpoint doesn't support.
+            for field in ["name", "title", "description", "slug"]:
+                try:
+                    params.pop(field)
+                except KeyError:
+                    pass
+
+            # Format the model name to match API docs.
+            params["model"] = endpoint.capitalize()
+
+        # Special handling parameters that are subclasses of Resource.
+        for field in ["collection", "publisher", "repository", "coverage", "subject", "contributor", "donor"]:
+            if params.get(field) is not None:
+                params[field] = params.get(field).id
+
+        # Handle non record/collection searches. These always match on "term".
         else:
             if params.get("name"):
                 params["term"] = params["name"]
             elif params.get("value"):
                 params["term"] = params["value"]
 
-        # Construct API URL.
-        url = f"https://digitalarchive.wilsoncenter.org/srv/{endpoint}.json"
-
         logging.debug("[*] Querying %s API endpoint with params: %s", endpoint, str(params))
+        url = f"https://digitalarchive.wilsoncenter.org/srv/{endpoint}.json"
         response = requests.get(url, params=params)
         return response.json()
 

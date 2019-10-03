@@ -1,11 +1,35 @@
+"""Helpers for searching the DA by Resource classes."""
+
+# Standard Library
+from __future__ import annotations
 from dataclasses import dataclass
 from typing import List
-from digitalarchive.api import DigitalArchive
+
+# Application modules
+import digitalarchive.api as api
+import digitalarchive.models as models
+
+
+class SearchResult:
+    """A results wrapper for a search against the DA API."""
+
+    def __init__(self, resource: models.Resource, **kwargs):
+        """
+        Generate metadata about the results of a search query.
+
+        :param resource: A DA model from digitalarchive.models.
+        :param kwargs: Search Terms.
+        """
+        self.uri: str = kwargs.get("uri")
+        self.sorting: dict = kwargs.get("sorting")
+        self.filtering: dict = kwargs.get("filtering")
+        self.list: List[models.Resource] = [resource(**item) for item in kwargs.get("list")]
 
 
 class ResourceMatcher:
+    """Wraps instances of models.Resource to provide search functionality. """
 
-    def __init__(self, resource, **kwargs):
+    def __init__(self, resource: models.Resource, **kwargs):
         """
         Wrapper for search and query related functions.
         :param resource: A DA model object from digitalarchive.models
@@ -19,40 +43,28 @@ class ResourceMatcher:
 
         # if this is a request for a single record by ID, return only the record
         if kwargs.get("id"):
-            response = DigitalArchive.get(resource.endpoint, resource_id=kwargs.get("id"))
+            response = api.DigitalArchive.get(endpoint=resource.endpoint, resource_id=kwargs.get("id"))
             # Wrap the response for SearchResult
             response = {"list": [response]}
 
         # If no resource_id present, treat as a search.
         else:
-            response = DigitalArchive.search(resource.endpoint, params=kwargs)
+            response = api.DigitalArchive.search(endpoint=resource.endpoint, params=kwargs)
 
         self.query = kwargs
         self.result = SearchResult(resource, **response)
         self.count = len(self.result.list)
 
-    def first(self):
+    def first(self) -> models.Resource:
+        """Return only the first record from a SearchResult."""
         return self.result.list[0]
 
-    def all(self):
+    def all(self) -> List[models.Resource]:
+        """Return all records from a SearchResult."""
         return self.result.list
 
-    def hydrate(self):
-        """todo: Finish this function."""
-        for resource in self.result:
+    def hydrate(self) -> SearchResult:
+        """Rehydrate all the Resources in a SearchResult."""
+        for resource in self.result.list:
             resource.pull()
         return self.result
-
-
-class SearchResult:
-
-    def __init__(self, resource, **kwargs):
-        """
-        The results of a search via the DA API..
-        :param resource: A DA model from digitalarchive.models
-        :param kwargs: Search Term
-        """
-        self.uri: str = kwargs.get("uri")
-        self.sorting: dict = kwargs.get("sorting")
-        self.filtering: dict = kwargs.get("filtering")
-        self.list: list = [resource(**item) for item in kwargs.get("list")]

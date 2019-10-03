@@ -1,8 +1,10 @@
+from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import List, Any, Optional
 
-from .matching import ResourceMatcher
-from .api import DigitalArchive
+
+import digitalarchive.matching as matching
+import digitalarchive.api as api
 
 
 @dataclass
@@ -10,13 +12,13 @@ class Resource:
     id: str
 
     @classmethod
-    def match(cls, **kwargs) -> ResourceMatcher:
+    def match(cls, **kwargs) -> matching.ResourceMatcher:
         """Find a record based on passed kwargs. Returns all if none passed"""
-        return ResourceMatcher(cls, **kwargs)
+        return matching.ResourceMatcher(cls, **kwargs)
 
     def pull(self):
         """Update a given record from the remote DA."""
-        data = DigitalArchive.get(endpoint=self.endpoint, resource_id=self.id)
+        data = api.DigitalArchive.get(endpoint=self.endpoint, resource_id=self.id)
         self.__init__(**data)
 
 
@@ -103,10 +105,10 @@ class Collection:
     endpoint: str = "collection"
 
     @classmethod
-    def match(cls, **kwargs) -> ResourceMatcher:
+    def match(cls, **kwargs) -> matching.ResourceMatcher:
         """Custom matcher limits results to correct model."""
         kwargs["model"] = "Collection"
-        return ResourceMatcher(cls, **kwargs)
+        return matching.ResourceMatcher(cls, **kwargs)
 
 
 @dataclass
@@ -212,11 +214,11 @@ class Document(Resource):
         self.classifications = [Classification(**classification) for classification in self.classifications]
 
     @classmethod
-    def match(cls, **kwargs) -> ResourceMatcher:
+    def match(cls, **kwargs) -> matching.ResourceMatcher:
         """Custom matcher limits results to correct model.
         Known search options:
             * q: a str search term.
 
         """
         kwargs["model"] = "Record"
-        return ResourceMatcher(cls, **kwargs)
+        return matching.ResourceMatcher(cls, **kwargs)
