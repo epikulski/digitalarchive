@@ -1,3 +1,5 @@
+"""ORM Models for DigitalArchive resource types."""
+
 from __future__ import annotations
 
 # Standard Library
@@ -137,6 +139,8 @@ class Translation(Asset):
 class MediaFile(Asset):
     path: str
     raw: Optional[bytes] = None
+    html: Optional[str] = None
+    pdf: Optional[str] = None
 
     def hydrate(self):
         # Grab HTML
@@ -241,6 +245,8 @@ class Classification:
 
 @dataclass
 class Document(Resource):
+    """"""
+    # pylint: disable=too-many-instance-attributes
 
     # Required Fields
     uri: str
