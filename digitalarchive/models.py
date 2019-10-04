@@ -38,7 +38,7 @@ class Subject(Resource):
 
 @dataclass
 class Language(Resource):
-    name: str
+    name: Optional[str] = None
 
 
 @dataclass
@@ -96,6 +96,9 @@ class Translation(Asset):
     html: Optional[str] = None
     pdf: Optional[bytes] = None
     raw: Optional[bytes] = None
+
+    def __post_init__(self):
+        self.language = Language(self.language)
 
     def hydrate(self):
 
