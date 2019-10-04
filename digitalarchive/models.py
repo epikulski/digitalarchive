@@ -1,10 +1,14 @@
-import logging
 from __future__ import annotations
+
+# Standard Library
+import logging
 from dataclasses import dataclass, field
 from typing import List, Any, Optional
 
+# Third Party Libraries
 import requests
 
+# Application Modules
 import digitalarchive.matching as matching
 import digitalarchive.api as api
 
@@ -83,7 +87,7 @@ class Transcript(Asset):
             elif self.extension == "pdf":
                 self.pdf = response.content
             else:
-                logging.warn("[!] Unknown file format '%s' encountered!", self.extension)
+                logging.warning("[!] Unknown file format '%s' encountered!", self.extension)
 
         else:
             raise Exception(f"[!] Hydrating transcript  ID#: %s failed with code: %s", self.id, response.status_code)
@@ -101,8 +105,6 @@ class Translation(Asset):
         self.language = Language(self.language)
 
     def hydrate(self):
-
-        # Grab content
         response = requests.get(f"https://digitalarchive.wilsoncenter.org/{self.url}")
 
         if response.status_code == 200:
@@ -115,7 +117,7 @@ class Translation(Asset):
             elif self.extension == "pdf":
                 self.pdf = response.content
             else:
-                logging.warn("[!] Unknown file format '%s' encountered!", self.extension)
+                logging.warning("[!] Unknown file format '%s' encountered!", self.extension)
 
         else:
             raise Exception(f"[!] Hydrating transcript  ID#: %s failed with code: %s", self.id, response.status_code)
@@ -140,7 +142,7 @@ class MediaFile(Asset):
             elif self.extension == "pdf":
                 self.pdf = response.content
             else:
-                logging.warn("[!] Unknown file format '%s' encountered!", self.extension)
+                logging.warning("[!] Unknown file format '%s' encountered!", self.extension)
 
         else:
             raise Exception(f"[!] Hydrating transcript  ID#: %s failed with code: %s", self.id, response.status_code)
