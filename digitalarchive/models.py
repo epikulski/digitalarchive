@@ -1,7 +1,9 @@
+import logging
 from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import List, Any, Optional
 
+import requests
 
 import digitalarchive.matching as matching
 import digitalarchive.api as api
@@ -52,23 +54,95 @@ class Asset:
     source_updated_at: str
 
 
+
 @dataclass
 class Transcript(Asset):
     url: str
-    pass
+    html: Optional[str] = None
+    pdf: Optional[bytes] = None
+    raw: Optional[bytes] = None
+
+    def hydrate(self):
+        """
+        Retrieve the full content of a transcript from the DA.
+
+        Note: There is some duplication here because Translation, Transcription, and MediaFile all behave
+        basically the same but media file has a 'path' rather than a 'uri' attribute. This makes it awkward
+        to get the inheritance right from a commmon ancestor (Asset).
+        TODO: See if I can reduce the code duplication with the above class.
+        """
+        response = requests.get(f"https://digitalarchive.wilsoncenter.org/{self.url}")
+
+        if response.status_code == 200:
+            # Preserve the raw content from the DA in any case.
+            self.raw = response.content
+
+            # Add add helper attributes for the common filetypes.
+            if self.extension == "html":
+                self.html = response.text
+            elif self.extension == "pdf":
+                self.pdf = self.content
+            else:
+                logging.warn("[!] Unknown file format '%s' encountered!", self.extension)
+
+        else:
+            raise Exception(f"[!] Hydrating transcript  ID#: %s failed with code: %s", self.id, response.status_code)
 
 
 @dataclass
 class Translation(Asset):
     url: str
     language: Language
-    pass
+    html: Optional[str] = None
+    pdf: Optional[bytes] = None
+    raw: Optional[bytes] = None
+
+    def hydrate(self):
+
+        # Grab content
+        response = requests.get(f"https://digitalarchive.wilsoncenter.org/{self.url}")
+
+        if response.status_code == 200:
+            # Preserve the raw content from the DA in any case.
+            self.raw = response.content
+
+            # Add add helper attributes for the common filetypes.
+            if self.extension == "html":
+                self.html = response.text
+            elif self.extension == "pdf":
+                self.pdf = self.content
+            else:
+                logging.warn("[!] Unknown file format '%s' encountered!", self.extension)
+
+        else:
+            raise Exception(f"[!] Hydrating transcript  ID#: %s failed with code: %s", self.id, response.status_code)
 
 
 @dataclass
 class MediaFile(Asset):
     path: str
-    pass
+    raw: Optional[bytes] = None
+
+    def hydrate(self):
+        # Grab HTML
+        response = requests.get(f"https://digitalarchive.wilsoncenter.org/{self.path}")
+
+        if response.status_code == 200:
+            # Preserve the raw content from the DA in any case.
+            self.raw = response.content
+
+            # Add add helper attributes for the common filetypes.
+            if self.extension == "html":
+                self.html = response.text
+            elif self.extension == "pdf":
+                self.pdf = self.content
+            else:
+                logging.warn("[!] Unknown file format '%s' encountered!", self.extension)
+
+        else:
+            raise Exception(f"[!] Hydrating transcript  ID#: %s failed with code: %s", self.id, response.status_code)
+
+        pass
 
 
 @dataclass
