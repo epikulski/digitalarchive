@@ -87,4 +87,8 @@ class DigitalArchive:
         url = f"https://digitalarchive.wilsoncenter.org/srv/{endpoint}/{resource_id}.json"
         logging.debug("[*] Querying %s API endpoint for resource id: %s", endpoint, resource_id)
         response = requests.get(url)
-        return response.json()
+
+        if response.status_code == 200:
+            return response.json()
+        else:
+            raise Exception("[!] Failed to find resource type %s at ID: %s", endpoint, resource_id)
