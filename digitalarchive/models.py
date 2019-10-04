@@ -81,7 +81,7 @@ class Transcript(Asset):
             if self.extension == "html":
                 self.html = response.text
             elif self.extension == "pdf":
-                self.pdf = self.content
+                self.pdf = response.content
             else:
                 logging.warn("[!] Unknown file format '%s' encountered!", self.extension)
 
@@ -110,7 +110,7 @@ class Translation(Asset):
             if self.extension == "html":
                 self.html = response.text
             elif self.extension == "pdf":
-                self.pdf = self.content
+                self.pdf = response.content
             else:
                 logging.warn("[!] Unknown file format '%s' encountered!", self.extension)
 
@@ -135,7 +135,7 @@ class MediaFile(Asset):
             if self.extension == "html":
                 self.html = response.text
             elif self.extension == "pdf":
-                self.pdf = self.content
+                self.pdf = response.content
             else:
                 logging.warn("[!] Unknown file format '%s' encountered!", self.extension)
 
