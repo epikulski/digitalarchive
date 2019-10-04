@@ -23,7 +23,7 @@ class Resource:
         return matching.ResourceMatcher(cls, **kwargs)
 
     def pull(self):
-        """Update a given record from the remote DA."""
+        """Update a given record using data from the remote DA."""
         data = api.DigitalArchive.get(endpoint=self.endpoint, resource_id=self.id)
         self.__init__(**data)
 
@@ -47,7 +47,6 @@ class Language(Resource):
 
 @dataclass
 class Asset:
-    """todo: Figure out endpoint logic for media files/translations/trascripts"""
 
     id: str
     filename: str
@@ -56,7 +55,6 @@ class Asset:
     asset_id: str
     source_created_at: str
     source_updated_at: str
-
 
 
 @dataclass
@@ -87,10 +85,16 @@ class Transcript(Asset):
             elif self.extension == "pdf":
                 self.pdf = response.content
             else:
-                logging.warning("[!] Unknown file format '%s' encountered!", self.extension)
+                logging.warning(
+                    "[!] Unknown file format '%s' encountered!", self.extension
+                )
 
         else:
-            raise Exception(f"[!] Hydrating transcript  ID#: %s failed with code: %s", self.id, response.status_code)
+            raise Exception(
+                f"[!] Hydrating transcript  ID#: %s failed with code: %s",
+                self.id,
+                response.status_code,
+            )
 
 
 @dataclass
@@ -117,10 +121,16 @@ class Translation(Asset):
             elif self.extension == "pdf":
                 self.pdf = response.content
             else:
-                logging.warning("[!] Unknown file format '%s' encountered!", self.extension)
+                logging.warning(
+                    "[!] Unknown file format '%s' encountered!", self.extension
+                )
 
         else:
-            raise Exception(f"[!] Hydrating transcript  ID#: %s failed with code: %s", self.id, response.status_code)
+            raise Exception(
+                f"[!] Hydrating transcript  ID#: %s failed with code: %s",
+                self.id,
+                response.status_code,
+            )
 
 
 @dataclass
@@ -142,12 +152,15 @@ class MediaFile(Asset):
             elif self.extension == "pdf":
                 self.pdf = response.content
             else:
-                logging.warning("[!] Unknown file format '%s' encountered!", self.extension)
-
+                logging.warning(
+                    "[!] Unknown file format '%s' encountered!", self.extension
+                )
         else:
-            raise Exception(f"[!] Hydrating transcript  ID#: %s failed with code: %s", self.id, response.status_code)
-
-        pass
+            raise Exception(
+                f"[!] Hydrating transcript  ID#: %s failed with code: %s",
+                self.id,
+                response.status_code,
+            )
 
 
 @dataclass
@@ -249,7 +262,7 @@ class Document(Resource):
     sort_string_by_coverage: Optional[str] = None
     main_src: Optional[
         Any
-    ] = None  # TODO: Never seen one of these in the while, so not sure
+    ] = None  # TODO: Never seen one of these in the while, so not sure how to handle.
     model: Optional[str] = None
 
     # Optional Lists:
@@ -279,18 +292,20 @@ class Document(Resource):
         """Process lists of subordinate classes."""
         self.subjects = [Subject(**subject) for subject in self.subjects]
         self.transcripts = [Transcript(**transcript) for transcript in self.transcripts]
-        self.translations = [Translation(**translation) for translation in self.translations]
         self.media_files = [MediaFile(**media_file) for media_file in self.media_files]
         self.languages = [Language(**language) for language in self.languages]
-        self.contributors = [Contributor(**contributor) for contributor in self.contributors]
         self.creators = [Contributor(**creator) for creator in self.creators]
-        self.original_coverages = [Coverage(**coverage) for coverage in self.original_coverages]
         self.collections = [Collection(**collection) for collection in self.collections]
         self.attachments = [Document(**attachment) for attachment in self.attachments]
         self.links = [Document(**document) for document in self.links]
-        self.repositories = [Repository(**repository) for repository in self.repositories]
         self.publishers = [Publisher(**publisher) for publisher in self.publishers]
-        self.classifications = [Classification(**classification) for classification in self.classifications]
+        self.translations = [Translation(**transl) for transl in self.translations]
+        self.contributors = [Contributor(**contrib) for contrib in self.contributors]
+        self.original_coverages = [Coverage(**cov) for cov in self.original_coverages]
+        self.repositories = [Repository(**repo) for repo in self.repositories]
+        self.classifications = [
+            Classification(**classification) for classification in self.classifications
+        ]
 
     @classmethod
     def match(cls, **kwargs) -> matching.ResourceMatcher:
