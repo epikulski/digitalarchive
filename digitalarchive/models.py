@@ -17,6 +17,7 @@ import digitalarchive.api as api
 
 @dataclass
 class Resource:
+    """Abstract parent class for all DigitalArchive objects."""
     id: str
 
     @classmethod
@@ -28,6 +29,12 @@ class Resource:
         """Update a given record using data from the remote DA."""
         data = api.DigitalArchive.get(endpoint=self.endpoint, resource_id=self.id)
         self.__init__(**data)
+
+    def __eq__(self, other):
+        return self.id == other.id
+
+    def __hash__(self):
+        return hash(('id', self.id))
 
 
 @dataclass
