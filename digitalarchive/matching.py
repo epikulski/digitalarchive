@@ -60,7 +60,9 @@ class ResourceMatcher:
         return self.result.list[0]
 
     def all(self) -> List[models.Resource]:
-        """Return all records from a SearchResult."""
+        """Return all records from a SearchResult.
+        todo: Add logic here for paginating through all the results in the set.
+        """
         return self.result.list
 
     def hydrate(self) -> SearchResult:

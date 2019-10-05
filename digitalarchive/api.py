@@ -1,20 +1,21 @@
 import pickle
 import logging
 import requests
-from typing import List, Set
+from typing import List, AbstractSet
 # from .models import Document, Collection, Contributor, Donor, Publisher, Coverage, Repository, Asset
+import digitalarchive.models as models
 
 
 class DigitalArchive:
-    # def __init__(self):
-        # Set up Class Typing.
-        # self.documents: Set[Document] = []
-        # self.collections: Set[Collection] = []
-        # self.contributors: Set[Contributor] = []
-        # self.donors: Set[Donor] = []
-        # self.publishers: Set[Publisher] = []
-        # self.coverages: Set[Coverage] = []
-        # self.repositories: Set[Repository] = []
+    def __init__(self):
+        # Set up typing.
+        self.documents: AbstractSet[models.Document] = set()
+        self.collections: AbstractSet[models.Collection] = set()
+        self.contributors: AbstractSet[models.Contributor] = set()
+        self.donors: AbstractSet[models.Donor] = set()
+        self.publishers: AbstractSet[models.Publisher] = set()
+        self.coverages: AbstractSet[models.Coverage] = set()
+        self.repositories: AbstractSet[models.Repository] = set()
 
     # def import_records(self, filepath: str):
     #     """Import DA records from a .pickle."""
@@ -22,8 +23,8 @@ class DigitalArchive:
     #     records = pickle.load(open(filepath, "rb"))
     #
     #     # separate documents & collections
-    #     self.documents = [ Document(**record) for record in records if record['model'] == "Record" ]
-    #     self.collections = [ Collection(**record) for record in records if record['model'] == "Collection" ]
+    #     self.documents = [models.Document(**record) for record in records if record['model'] == "Record"]
+    #     self.collections = [models.Collection(**record) for record in records if record['model'] == "Collection"]
     #     logging.info("[*] Imported %s records from %s.", len(records), filepath)
 
     # def extract_entities(self):
