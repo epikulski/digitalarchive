@@ -1,12 +1,18 @@
-import pickle
+"""Principal class for interacting with the DigitalArchive"""
+
+# Standard Library
 import logging
+from typing import List, AbstractSet, Optional, Dict
+
+# 3rd Party Libraries
 import requests
-from typing import List, AbstractSet
-# from .models import Document, Collection, Contributor, Donor, Publisher, Coverage, Repository, Asset
+
+# Library modules
 import digitalarchive.models as models
 
 
 class DigitalArchive:
+    """ORM Entrypoint for the DigitalArchive."""
     def __init__(self):
         # Set up typing.
         self.documents: AbstractSet[models.Document] = set()
@@ -35,19 +41,35 @@ class DigitalArchive:
     #
 
     @staticmethod
-    def search(endpoint: str, params: dict = None) -> List[dict]:
+    def search(model: str, params: Optional[Dict] = None) -> List[dict]:
         """
         Search for DA records by endpoint and term.
 
         We have to massage the params we pass to the search endpoint as the API matches on
         inconsistent things.
-
-        TODO: Refactor this to be sensible.
         """
+        # pylint: disable=bad-continuation
 
-        # Handle record searches. We transform some of the parameters
-        if endpoint in ["record", "collection"]:
+        # avoid mutable default arguments.
+        if params is None:
+            params = {}
 
+        # Special handling for parameters that are subclasses of Resource.
+        # We sub in the ID# instead of the whole dataclass.
+        for field in [
+            "collection",
+            "publisher",
+            "repository",
+            "coverage",
+            "subject",
+            "contributor",
+            "donor",
+        ]:
+            if params.get(field) is not None:
+                params[field] = params.get(field).id
+
+        # Handle record searches. We transform some of the parameters.
+        if model in ["record", "collection"]:
             # concatenate all of the keyword fields into the 'q' param
             keywords = []
             for field in ["name", "title", "description", "slug"]:
@@ -57,39 +79,51 @@ class DigitalArchive:
 
             # Strip out fields the search endpoint doesn't support.
             for field in ["name", "title", "description", "slug"]:
-                try:
+                if params.get(field) is not None:
                     params.pop(field)
-                except KeyError:
-                    pass
 
             # Format the model name to match API docs.
-            params["model"] = endpoint.capitalize()
+            params["model"] = model.capitalize()
 
-        # Special handling parameters that are subclasses of Resource.
-        for field in ["collection", "publisher", "repository", "coverage", "subject", "contributor", "donor"]:
-            if params.get(field) is not None:
-                params[field] = params.get(field).id
-
-        # Handle non record/collection searches. These always match on "term".
+        # Handle non record or collection searches. These always match on "term".
         else:
-            if params.get("name"):
+            # If we've got both a name and a value, join them.
+            if params.get("name") and params.get("value"):
+                params["term"] = " ".join([params.get("name"), params.get("value")])
+
+            # Otherwise, treat the one that exists as the term.
+            elif params.get("name"):
                 params["term"] = params["name"]
             elif params.get("value"):
                 params["term"] = params["value"]
 
-        logging.debug("[*] Querying %s API endpoint with params: %s", endpoint, str(params))
-        url = f"https://digitalarchive.wilsoncenter.org/srv/{endpoint}.json"
+        # Send Query.
+        logging.debug(
+            "[*] Querying %s API endpoint with params: %s", model, str(params)
+        )
+        url = f"https://digitalarchive.wilsoncenter.org/srv/{model}.json"
         response = requests.get(url, params=params)
-        return response.json()
+
+        if response.status_code == 200:
+            return response.json()
+        else:
+            raise Exception(
+                "[!] Search failed for resource type %s with terms %s" % (model, params)
+            )
 
     @staticmethod
     def get(endpoint: str, resource_id: str) -> dict:
         """Retrieve a single record from the DA."""
-        url = f"https://digitalarchive.wilsoncenter.org/srv/{endpoint}/{resource_id}.json"
-        logging.debug("[*] Querying %s API endpoint for resource id: %s", endpoint, resource_id)
+        url = (
+            f"https://digitalarchive.wilsoncenter.org/srv/{endpoint}/{resource_id}.json"
+        )
+        logging.debug(
+            "[*] Querying %s API endpoint for resource id: %s", endpoint, resource_id
+        )
         response = requests.get(url)
 
         if response.status_code == 200:
             return response.json()
         else:
-            raise Exception("[!] Failed to find resource type %s at ID: %s", endpoint, resource_id)
+            raise Exception(
+                "[!] Failed to find resource type %s at ID: %s" % (endpoint, resource_id))
