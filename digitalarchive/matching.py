@@ -2,7 +2,6 @@
 
 # Standard Library
 from __future__ import annotations
-from dataclasses import dataclass
 from typing import List
 
 # Application modules
@@ -20,10 +19,12 @@ class SearchResult:
         :param resource: A DA model from digitalarchive.models.
         :param kwargs: Search Terms.
         """
-        self.uri: str = kwargs.get("uri")
-        self.sorting: dict = kwargs.get("sorting")
-        self.filtering: dict = kwargs.get("filtering")
-        self.list: List[models.Resource] = [resource(**item) for item in kwargs.get("list")]
+        self.uri = kwargs.get("uri")
+        self.sorting = kwargs.get("sorting")
+        self.filtering = kwargs.get("filtering")
+        self.list: List[models.Resource] = [
+            resource(**item) for item in kwargs.get("list")
+        ]
 
 
 class ResourceMatcher:
@@ -43,13 +44,15 @@ class ResourceMatcher:
 
         # if this is a request for a single record by ID, return only the record
         if kwargs.get("id"):
-            response = api.DigitalArchive.get(endpoint=resource.endpoint, resource_id=kwargs.get("id"))
+            response = api.DigitalArchive.get(
+                endpoint=resource.endpoint, resource_id=kwargs.get("id")
+            )
             # Wrap the response for SearchResult
             response = {"list": [response]}
 
         # If no resource_id present, treat as a search.
         else:
-            response = api.DigitalArchive.search(endpoint=resource.endpoint, params=kwargs)
+            response = api.DigitalArchive.search(model=resource.endpoint, params=kwargs)
 
         self.query = kwargs
         self.result = SearchResult(resource, **response)
@@ -62,11 +65,15 @@ class ResourceMatcher:
     def all(self) -> List[models.Resource]:
         """Return all records from a SearchResult.
         todo: Add logic here for paginating through all the results in the set.
+
         """
         return self.result.list
 
     def hydrate(self) -> SearchResult:
-        """Rehydrate all the Resources in a SearchResult."""
+        """Rehydrate all the Resources in a SearchResult.
+
+        Probably I need to do a yield/generator thing so that the user can iterate
+        through an all query and new pages are only fetched when needed. ` """
         for resource in self.result.list:
             resource.pull()
         return self.result
