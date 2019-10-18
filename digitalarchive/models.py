@@ -1,11 +1,14 @@
-"""ORM Models for DigitalArchive resource types."""
+"""ORM Models for DigitalArchive resource types.
+
+todo: figure out a better way to represent unhydrated fields than 'none'.
+"""
 
 from __future__ import annotations
 
 # Standard Library
 import logging
 from dataclasses import dataclass, field
-from typing import List, Any, Optional
+from typing import List, Any, Optional, Union
 
 # Third Party Libraries
 import requests
@@ -18,6 +21,7 @@ import digitalarchive.api as api
 @dataclass
 class Resource:
     """Abstract parent class for all DigitalArchive objects."""
+
     id: str
 
     @classmethod
@@ -34,7 +38,7 @@ class Resource:
         return self.id == other.id
 
     def __hash__(self):
-        return hash(('id', self.id))
+        return hash(("id", self.id))
 
 
 @dataclass
@@ -55,7 +59,13 @@ class Language(Resource):
 
 
 @dataclass
-class Asset:
+class _Asset:
+    """
+    Abstract class representing fpr Translations, Transcriptions, and MediaFiles.
+
+    Note: We don't define raw, html, or pdf here because they are not present on
+    the stub version of Assets.
+    """
 
     id: str
     filename: str
@@ -65,23 +75,22 @@ class Asset:
     source_created_at: str
     source_updated_at: str
 
+    def __post_init__(self):
+        """
+        Instantiate some required fields for child classes.
 
-@dataclass
-class Transcript(Asset):
-    url: str
-    html: Optional[str] = None
-    pdf: Optional[bytes] = None
-    raw: Optional[bytes] = None
+
+        Note: This is awkward but necessary because dataclasses don't let
+        you have non-default arguments in a child class. However,
+        the MediaFile record type has a 'path' field instead of a 'url' field,
+        which makes inheritance of a shared hydrate method awkward.
+        """
+        self.url = None
+        self.raw = None
+        self.pdf = None
+        self.html = None
 
     def hydrate(self):
-        """
-        Retrieve the full content of a transcript from the DA.
-
-        Note: There is some duplication here because Translation, Transcription, and MediaFile all behave
-        basically the same but media file has a 'path' rather than a 'uri' attribute. This makes it awkward
-        to get the inheritance right from a commmon ancestor (Asset).
-        TODO: See if I can reduce the code duplication with the above class.
-        """
         response = requests.get(f"https://digitalarchive.wilsoncenter.org/{self.url}")
 
         if response.status_code == 200:
@@ -100,78 +109,45 @@ class Transcript(Asset):
 
         else:
             raise Exception(
-                f"[!] Hydrating transcript  ID#: %s failed with code: %s",
+                f"[!] Hydrating asset ID#: %s failed with code: %s",
                 self.id,
                 response.status_code,
             )
 
 
 @dataclass
-class Translation(Asset):
+class Transcript(_Asset):
     url: str
-    language: Language
     html: Optional[str] = None
     pdf: Optional[bytes] = None
     raw: Optional[bytes] = None
 
     def __post_init__(self):
-        self.language = Language(self.language)
-
-    def hydrate(self):
-        response = requests.get(f"https://digitalarchive.wilsoncenter.org/{self.url}")
-
-        if response.status_code == 200:
-            # Preserve the raw content from the DA in any case.
-            self.raw = response.content
-
-            # Add add helper attributes for the common filetypes.
-            if self.extension == "html":
-                self.html = response.text
-            elif self.extension == "pdf":
-                self.pdf = response.content
-            else:
-                logging.warning(
-                    "[!] Unknown file format '%s' encountered!", self.extension
-                )
-
-        else:
-            raise Exception(
-                f"[!] Hydrating transcript  ID#: %s failed with code: %s",
-                self.id,
-                response.status_code,
-            )
+        """See note on _Asset __post_init__ function."""
+        pass
 
 
 @dataclass
-class MediaFile(Asset):
+class Translation(_Asset):
+    url: str
+    language: Union[Language, dict]
+    html: Optional[str] = None
+    pdf: Optional[bytes] = None
+    raw: Optional[bytes] = None
+
+    def __post_init__(self):
+        self.language = Language(**self.language)
+
+
+@dataclass
+class MediaFile(_Asset):
     path: str
     raw: Optional[bytes] = None
     html: Optional[str] = None
     pdf: Optional[str] = None
 
-    def hydrate(self):
-        # Grab HTML
-        response = requests.get(f"https://digitalarchive.wilsoncenter.org/{self.path}")
-
-        if response.status_code == 200:
-            # Preserve the raw content from the DA in any case.
-            self.raw = response.content
-
-            # Add add helper attributes for the common filetypes.
-            if self.extension == "html":
-                self.html = response.text
-            elif self.extension == "pdf":
-                self.pdf = response.content
-            else:
-                logging.warning(
-                    "[!] Unknown file format '%s' encountered!", self.extension
-                )
-        else:
-            raise Exception(
-                f"[!] Hydrating transcript  ID#: %s failed with code: %s",
-                self.id,
-                response.status_code,
-            )
+    def __post_init__(self):
+        self.url: str = self.path
 
 
 @dataclass
@@ -253,6 +229,7 @@ class Classification:
 @dataclass
 class Document(Resource):
     """"""
+
     # pylint: disable=too-many-instance-attributes
 
     # Required Fields
