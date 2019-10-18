@@ -2,9 +2,7 @@
 # pylint: disable=no-self-use,invalid-name,missing-docstring
 
 # Standard Library
-import pickle
 import unittest.mock
-from typing import Generator
 
 # 3rd Party Libs
 import pytest
@@ -12,19 +10,6 @@ import pytest
 # Library Modules
 from digitalarchive.api import DigitalArchive
 from digitalarchive.models import Subject
-
-
-@pytest.fixture
-def mock_unhydrated_documents() -> Generator:
-    """Yield a set of dummy records from test fixture."""
-    records = pickle.load(
-        open(
-            "/Users/epikulski/digitalarchive/tests/fixtures/unhydrated_records.pickle",
-            "rb",
-        )
-    )
-    yield records
-
 
 class TestDigitalArchive:
     """Unit Tests of the api.DigitalArchive ORM class."""
@@ -139,12 +124,13 @@ class TestDigitalArchive:
         )
 
     @unittest.mock.patch("digitalarchive.api.requests")
-    def test_get(self, mock_requests, mock_unhydrated_documents):
+    def test_get(self, mock_requests):
         """Confirm digitalarchive.api sends a correctly formed request."""
         # pylint: disable=redefined-outer-name
         # Set up mock
         mock_requests.get().status_code = 200
-        mock_requests.get().json.return_value = mock_unhydrated_documents
+        mock_response = unittest.mock.MagicMock()
+        mock_requests.get().json.return_value = mock_response
 
         # Query API for dummy record.
         data = DigitalArchive.get(endpoint="document", resource_id="1")
@@ -154,7 +140,7 @@ class TestDigitalArchive:
         mock_requests.get.assert_called_with(intended_url)
 
         # Confirm correct data was returned
-        assert data == mock_unhydrated_documents
+        assert data == mock_response
 
     @unittest.mock.patch("digitalarchive.api.requests")
     def test_get_fail(self, mock_requests):
