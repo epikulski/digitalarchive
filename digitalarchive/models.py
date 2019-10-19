@@ -16,6 +16,7 @@ import requests
 # Application Modules
 import digitalarchive.matching as matching
 import digitalarchive.api as api
+import digitalarchive.exceptions as exceptions
 
 
 @dataclass
@@ -106,7 +107,7 @@ class _Asset(Resource):
                 )
 
         else:
-            raise Exception(
+            raise exceptions.APIServerError(
                 f"[!] Hydrating asset ID#: %s failed with code: %s",
                 self.id,
                 response.status_code,

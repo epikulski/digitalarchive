@@ -9,6 +9,7 @@ import requests
 
 # Library modules
 import digitalarchive.models as models
+import digitalarchive.exceptions as exceptions
 
 
 class DigitalArchive:
@@ -34,7 +35,7 @@ class DigitalArchive:
     #     logging.info("[*] Imported %s records from %s.", len(records), filepath)
 
     # def extract_entities(self):
-    #     """Extract entities from avaialble records"""
+    #     """Extract entities from available records"""
     #     for doc in self.documents:
     #         [self.contributors.append(contributor) for contributor in doc.contributors if contributor not in self.contributors]
     #     pass
@@ -107,7 +108,7 @@ class DigitalArchive:
         if response.status_code == 200:
             return response.json()
         else:
-            raise Exception(
+            raise exceptions.NoSuchResource(
                 "[!] Search failed for resource type %s with terms %s" % (model, params)
             )
 
@@ -125,5 +126,5 @@ class DigitalArchive:
         if response.status_code == 200:
             return response.json()
         else:
-            raise Exception(
+            raise exceptions.NoSuchResource(
                 "[!] Failed to find resource type %s at ID: %s" % (endpoint, resource_id))
