@@ -59,15 +59,13 @@ class Language(Resource):
 
 
 @dataclass
-class _Asset:
+class _Asset(Resource):
     """
     Abstract class representing fpr Translations, Transcriptions, and MediaFiles.
 
     Note: We don't define raw, html, or pdf here because they are not present on
     the stub version of Assets.
     """
-
-    id: str
     filename: str
     content_type: str
     extension: str
@@ -151,31 +149,27 @@ class MediaFile(_Asset):
 
 
 @dataclass
-class Contributor:
-    id: str
+class Contributor(Resource):
     name: str
     _endpoint: str = "contributor"
 
 
 @dataclass
-class Donor:
-    id: str
+class Donor(Resource):
     name: str
     _endpoint: str = "donor"
 
 
 @dataclass
-class Coverage:
+class Coverage(Resource):
     uri: str
-    id: str
     name: str
     parent: Any
     _endpoint: str = "coverage"
 
 
 @dataclass
-class Collection:
-    id: str
+class Collection(Resource):
     name: str
     slug: str
     parent: Optional[
@@ -191,8 +185,7 @@ class Collection:
 
 
 @dataclass
-class Repository:
-    id: str
+class Repository(Resource):
     name: str
     uri: Optional[str] = None
     value: Optional[str] = None
@@ -200,29 +193,25 @@ class Repository:
 
 
 @dataclass
-class Publisher:
-    id: str
+class Publisher(Resource):
     name: str
     value: str
     _endpoint: str = "publisher"
 
 
 @dataclass
-class Type:
-    id: str
+class Type(Resource):
     name: str
 
 
 @dataclass
-class Right:
-    id: str
+class Right(Resource):
     name: str
     rights: str
 
 
 @dataclass
-class Classification:
-    id: str
+class Classification(Resource):
     name: str
 
 
