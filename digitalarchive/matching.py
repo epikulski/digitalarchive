@@ -7,10 +7,12 @@ from typing import List
 # Application modules
 import digitalarchive.api as api
 import digitalarchive.models as models
+import digitalarchive.exceptions as exceptions
 
 
 class SearchResult:
     """A results wrapper for a search against the DA API."""
+    #pylint: disable=too-few-public-methods
 
     def __init__(self, resource: models.Resource, **kwargs):
         """
@@ -34,13 +36,18 @@ class ResourceMatcher:
         """
         Wrapper for search and query related functions.
         :param resource: A DA model object from digitalarchive.models
-        :param kwargs:
+        :param kwargs: Search keywords to match on.
         """
         # Run a kwarg search for the passed object, return the resultset.
 
         # Set some properties for the search
         # * count of results
         # * list of results -- maybe a generator later?
+
+        # Check that search keywords are valid for given model.
+        for key in kwargs:
+            if key not in resource.__dataclass_fields__.keys():
+                raise exceptions.InvalidSearchField
 
         # if this is a request for a single record by ID, return only the record
         if kwargs.get("id"):
