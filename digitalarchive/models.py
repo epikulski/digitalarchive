@@ -10,9 +10,6 @@ import logging
 from dataclasses import dataclass, field
 from typing import List, Any, Optional, Union
 
-# Third Party Libraries
-import requests
-
 # Application Modules
 import digitalarchive.matching as matching
 import digitalarchive.api as api
@@ -32,8 +29,12 @@ class Resource:
 
     def pull(self):
         """Update a given record using data from the remote DA."""
-        data = api.DigitalArchive.get(endpoint=self.endpoint, resource_id=self.id)
+        data = api.get(endpoint=self.endpoint, resource_id=self.id)
         self.__init__(**data)
+
+    def hydrate(self):
+        """Alias for Resource.pull"""
+        self.pull()
 
     def __eq__(self, other):
         return self.id == other.id
@@ -90,7 +91,7 @@ class _Asset(Resource):
         self.html = None
 
     def hydrate(self):
-        response = requests.get(f"https://digitalarchive.wilsoncenter.org/{self.url}")
+        response = api.SESSION.get(f"https://digitalarchive.wilsoncenter.org/{self.url}")
 
         if response.status_code == 200:
             # Preserve the raw content from the DA in any case.

@@ -1,12 +1,13 @@
+"""Custom Exceptions."""
 
-class InvalidSearchField(Exception):
+
+class InvalidSearchFieldError(Exception):
     """User attempted to search on a field not valid for a given model."""
-    pass
 
-class NoSuchResource(Exception):
+
+class NoSuchResourceError(Exception):
     """User attempted to retrieve a resource by ID#, but no such Resource exists"""
-    pass
+
 
 class APIServerError(Exception):
     """DA API returned a non-200 code for attempted operation."""
-    pass
