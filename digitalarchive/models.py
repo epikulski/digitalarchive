@@ -91,7 +91,7 @@ class _Asset(Resource):
         self.html = None
 
     def hydrate(self):
-        response = api.SESSION.get(f"https://digitalarchive.wilsoncenter.org/{self.url}")
+        response = api.session.get(f"https://digitalarchive.wilsoncenter.org/{self.url}")
 
         if response.status_code == 200:
             # Preserve the raw content from the DA in any case.

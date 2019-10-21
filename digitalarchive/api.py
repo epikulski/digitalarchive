@@ -11,9 +11,9 @@ import requests
 import digitalarchive.exceptions as exceptions
 
 # Global Variables
-SESSION = requests.session()
+session = requests.session()
 
-def search(model: str, params: Optional[Dict] = None) -> List[dict]:
+def search(model: str, params: Optional[Dict] = None) -> dict:
     """
     Search for DA records by endpoint and term.
 
@@ -76,7 +76,7 @@ def search(model: str, params: Optional[Dict] = None) -> List[dict]:
         "[*] Querying %s API endpoint with params: %s", model, str(params)
     )
     url = f"https://digitalarchive.wilsoncenter.org/srv/{model}.json"
-    response = SESSION.get(url, params=params)
+    response = session.get(url, params=params)
 
     if response.status_code == 200:
         return response.json()
@@ -93,7 +93,7 @@ def get(endpoint: str, resource_id: str) -> dict:
     logging.debug(
         "[*] Querying %s API endpoint for resource id: %s", endpoint, resource_id
     )
-    response = SESSION.get(url)
+    response = session.get(url)
 
     if response.status_code == 200:
         return response.json()
