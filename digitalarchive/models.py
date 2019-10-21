@@ -153,13 +153,13 @@ class MediaFile(_Asset):
 @dataclass
 class Contributor(Resource):
     name: str
-    _endpoint: str = "contributor"
+    endpoint: str = "contributor"
 
 
 @dataclass
 class Donor(Resource):
     name: str
-    _endpoint: str = "donor"
+    endpoint: str = "donor"
 
 
 @dataclass
@@ -167,7 +167,7 @@ class Coverage(Resource):
     uri: str
     name: str
     parent: Any
-    _endpoint: str = "coverage"
+    endpoint: str = "coverage"
 
 
 @dataclass
@@ -191,14 +191,14 @@ class Repository(Resource):
     name: str
     uri: Optional[str] = None
     value: Optional[str] = None
-    _endpoint: str = "repository"
+    endpoint: str = "repository"
 
 
 @dataclass
 class Publisher(Resource):
     name: str
     value: str
-    _endpoint: str = "publisher"
+    endpoint: str = "publisher"
 
 
 @dataclass

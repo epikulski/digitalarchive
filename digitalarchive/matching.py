@@ -13,7 +13,7 @@ import digitalarchive.exceptions as exceptions
 class ResourceMatcher:
     """Wraps instances of models.Resource to provide search functionality. """
 
-    def __init__(self, resource_model: models.Resource, **kwargs):
+    def __init__(self, resource_model: models.Resource, items_per_page=200, **kwargs):
         """
         Wrapper for search and query related functions.
         :param resource_model: A DA model object from digitalarchive.models
@@ -36,7 +36,7 @@ class ResourceMatcher:
         # If no resource_id present, treat as a search.
         else:
             # Fetch the first page of records from the API.
-            self.query["itemsPerPage"] = 200
+            self.query["itemsPerPage"] = items_per_page
             response = api.search(
                 model=self.model.endpoint, params=self.query
             )
@@ -45,7 +45,7 @@ class ResourceMatcher:
             self.count = response["metadata"]["matches_estimated"]
 
             # If first page contains all results, set list
-            if response["pagination"]["totalItems"] <= self.query["itemsPerPage"]:
+            if self.count <= self.query["itemsPerPage"]:
                 self.list = (self.model(**item) for item in response["list"])
 
             # Set up generator to serve remaining results.
