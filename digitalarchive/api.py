@@ -20,8 +20,6 @@ def search(model: str, params: Optional[Dict] = None) -> dict:
 
     We have to massage the params we pass to the search endpoint as the API matches on
     inconsistent things.
-
-    todo: Add logic for pagination, either here or in searchresult.
     """
     # pylint: disable=bad-continuation
 
@@ -77,12 +75,14 @@ def search(model: str, params: Optional[Dict] = None) -> dict:
     url = f"https://digitalarchive.wilsoncenter.org/srv/{model}.json"
     response = SESSION.get(url, params=params)
 
-    if response.status_code == 200:
-        return response.json()
-    else:
+    # Bail out if non-200 response.
+    if response.status_code != 200:
         raise exceptions.NoSuchResourceError(
             "[!] Search failed for resource type %s with terms %s" % (model, params)
         )
+
+    # Return response body.
+    return response.json()
 
 
 def get(endpoint: str, resource_id: str) -> dict:
