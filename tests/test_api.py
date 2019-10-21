@@ -15,7 +15,7 @@ from digitalarchive.models import Subject
 class TestSearch:
     """Unit Tests of the api.DigitalArchive ORM class."""
 
-    @unittest.mock.patch("digitalarchive.api.session")
+    @unittest.mock.patch("digitalarchive.api.SESSION")
     def test_search_document(self, mock_requests):
         # Prepare mocks.
         mock_requests.get().status_code = 200
@@ -33,7 +33,7 @@ class TestSearch:
         # Check function returns json on success.
         assert results is mock_requests.get().json.return_value
 
-    @unittest.mock.patch("digitalarchive.api.session")
+    @unittest.mock.patch("digitalarchive.api.SESSION")
     def test_search_empty_params(self, mock_requests):
         mock_requests.get().status_code = 200
 
@@ -46,7 +46,7 @@ class TestSearch:
             params={"q": "", "model": "Record"},
         )
 
-    @unittest.mock.patch("digitalarchive.api.session")
+    @unittest.mock.patch("digitalarchive.api.SESSION")
     def test_search_error(self, mock_requests):
         # Set up internal server error mock.
         mock_requests.get().status_code = 500
@@ -55,7 +55,7 @@ class TestSearch:
             # Send Request
             digitalarchive.api.search(model="record")
 
-    @unittest.mock.patch("digitalarchive.api.session")
+    @unittest.mock.patch("digitalarchive.api.SESSION")
     def test_search_subject(self, mock_requests):
         # Prepare mocks.
         mock_requests.get().status_code = 200
@@ -70,7 +70,7 @@ class TestSearch:
             params={"name": "Soviet", "value": "Soviet", "term": "Soviet Soviet"},
         )
 
-    @unittest.mock.patch("digitalarchive.api.session")
+    @unittest.mock.patch("digitalarchive.api.SESSION")
     def test_search_resource_by_name(self, mock_requests):
         # Prepare mocks.
         mock_requests.get().status_code = 200
@@ -85,7 +85,7 @@ class TestSearch:
             params={"name": "Soviet", "term": "Soviet"},
         )
 
-    @unittest.mock.patch("digitalarchive.api.session")
+    @unittest.mock.patch("digitalarchive.api.SESSION")
     def test_search_resource_by_value(self, mock_requests):
         # Prepare mocks.
         mock_requests.get().status_code = 200
@@ -100,7 +100,7 @@ class TestSearch:
             params={"value": "Soviet", "term": "Soviet"},
         )
 
-    @unittest.mock.patch("digitalarchive.api.session")
+    @unittest.mock.patch("digitalarchive.api.SESSION")
     def test_search_by_model(self, mock_requests):
         # Prepare mocks.
         mock_requests.get().status_code = 200
@@ -119,7 +119,7 @@ class TestSearch:
 
 class TestGet:
 
-    @unittest.mock.patch("digitalarchive.api.session")
+    @unittest.mock.patch("digitalarchive.api.SESSION")
     def test_get(self, mock_requests):
         """Confirm digitalarchive.api sends a correctly formed request."""
         # pylint: disable=redefined-outer-name
@@ -138,7 +138,7 @@ class TestGet:
         # Confirm correct data was returned
         assert data == mock_response
 
-    @unittest.mock.patch("digitalarchive.api.session")
+    @unittest.mock.patch("digitalarchive.api.SESSION")
     def test_get_fail(self, mock_requests):
         """Confirm digitalarchive.api raises exception on server errors."""
         # Set up mock

@@ -2,7 +2,7 @@
 
 # Standard Library
 import logging
-from typing import List, Optional, Dict
+from typing import Optional, Dict
 
 # 3rd Party Libraries
 import requests
@@ -11,7 +11,8 @@ import requests
 import digitalarchive.exceptions as exceptions
 
 # Global Variables
-session = requests.session()
+SESSION = requests.session()
+
 
 def search(model: str, params: Optional[Dict] = None) -> dict:
     """
@@ -72,11 +73,9 @@ def search(model: str, params: Optional[Dict] = None) -> dict:
             params["term"] = params["value"]
 
     # Send Query.
-    logging.debug(
-        "[*] Querying %s API endpoint with params: %s", model, str(params)
-    )
+    logging.debug("[*] Querying %s API endpoint with params: %s", model, str(params))
     url = f"https://digitalarchive.wilsoncenter.org/srv/{model}.json"
-    response = session.get(url, params=params)
+    response = SESSION.get(url, params=params)
 
     if response.status_code == 200:
         return response.json()
@@ -85,18 +84,20 @@ def search(model: str, params: Optional[Dict] = None) -> dict:
             "[!] Search failed for resource type %s with terms %s" % (model, params)
         )
 
+
 def get(endpoint: str, resource_id: str) -> dict:
     """Retrieve a single record from the DA."""
-    url = (
-        f"https://digitalarchive.wilsoncenter.org/srv/{endpoint}/{resource_id}.json"
-    )
+    url = f"https://digitalarchive.wilsoncenter.org/srv/{endpoint}/{resource_id}.json"
     logging.debug(
         "[*] Querying %s API endpoint for resource id: %s", endpoint, resource_id
     )
-    response = session.get(url)
+    response = SESSION.get(url)
 
-    if response.status_code == 200:
-        return response.json()
-    else:
+    # Bail out if non-200 code.
+    if response.status_code != 200:
         raise exceptions.NoSuchResourceError(
-            "[!] Failed to find resource type %s at ID: %s" % (endpoint, resource_id))
+            "[!] Failed to find resource type %s at ID: %s" % (endpoint, resource_id)
+        )
+
+    # Return response body.
+    return response.json()

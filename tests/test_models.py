@@ -113,7 +113,7 @@ class TestTranscript:
         )
         return transcript
 
-    @unittest.mock.patch("digitalarchive.models.api.session")
+    @unittest.mock.patch("digitalarchive.models.api.SESSION")
     def test_hydrate(self, mock_requests, mock_transcript):
         # Prep mocks.
         mock_requests.get().status_code = 200
@@ -127,7 +127,7 @@ class TestTranscript:
             "https://digitalarchive.wilsoncenter.org/test_url"
         )
 
-    @unittest.mock.patch("digitalarchive.models.api.session")
+    @unittest.mock.patch("digitalarchive.models.api.SESSION")
     def test_hydrate_html(self, mock_requests, mock_transcript):
         # Prep mocks.
         mock_requests.get().status_code = 200
@@ -142,7 +142,7 @@ class TestTranscript:
         # Ensure html gets set
         assert mock_transcript.html is mock_requests.get().text
 
-    @unittest.mock.patch("digitalarchive.models.api.session")
+    @unittest.mock.patch("digitalarchive.models.api.SESSION")
     def test_hydrate_pdf(self, mock_requests, mock_transcript):
         # Prep mocks.
         mock_requests.get().status_code = 200
@@ -157,7 +157,7 @@ class TestTranscript:
         # Ensure html gets set
         assert mock_transcript.pdf is mock_requests.get().content
 
-    @unittest.mock.patch("digitalarchive.models.api.session")
+    @unittest.mock.patch("digitalarchive.models.api.SESSION")
     def test_hydrate_bad_extension(self, mock_requests, mock_transcript):
         # Prep mocks.
         mock_requests.get.return_value.status_code = 200
@@ -173,7 +173,7 @@ class TestTranscript:
         assert mock_transcript.html is None
         assert mock_transcript.pdf is None
 
-    @unittest.mock.patch("digitalarchive.models.api.session")
+    @unittest.mock.patch("digitalarchive.models.api.SESSION")
     def test_hydrate_server_error(self, mock_requests, mock_transcript):
         mock_requests.get().status_code = 500
 
