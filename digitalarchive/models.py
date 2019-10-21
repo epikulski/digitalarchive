@@ -2,6 +2,7 @@
 
 todo: figure out a better way to represent unhydrated fields than 'none'.
 """
+# pylint: disable=missing-class-docstring
 
 from __future__ import annotations
 
@@ -124,7 +125,7 @@ class Transcript(_Asset):
 
     def __post_init__(self):
         """See note on _Asset __post_init__ function."""
-        pass
+        pass  # pylint: disable=unnecessary-pass
 
 
 @dataclass
@@ -219,7 +220,6 @@ class Classification(Resource):
 
 @dataclass
 class Document(Resource):
-    """"""
 
     # pylint: disable=too-many-instance-attributes
 
