@@ -14,5 +14,5 @@ class TestResourceMatcher:
     """Test digitalarchive.matching.ResourceMatcher."""
 
     def test_invalid_keyword(self):
-        with pytest.raises(exceptions.InvalidSearchField):
+        with pytest.raises(exceptions.InvalidSearchFieldError):
             models.Resource.match(test="test")
