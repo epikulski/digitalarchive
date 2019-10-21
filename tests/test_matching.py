@@ -47,13 +47,35 @@ class TestResourceMatcher:
         mock_get_all.assert_called_with(mock_search())
 
     @unittest.mock.patch("digitalarchive.matching.ResourceMatcher._record_by_id")
-    def test_match_by_id(self, mock_get_by_id):
+    def test_match_id_field(self, mock_get_by_id):
         """Test Search API called with proper params."""
         # Run match
-        matching.ResourceMatcher(models.Resource, id=1)
+        mock_get_by_id.return_value = {"list": [{"id": 1}]}
+        test_match = matching.ResourceMatcher(models.Resource, id=1)
 
         # Check search called with proper params.
         mock_get_by_id.assert_called_once()
+
+        # Inspect list for proper data
+        match_results = list(test_match.list)
+        assert len(match_results) == 1
+        assert isinstance(match_results[0], models.Resource)
+
+    @unittest.mock.patch("digitalarchive.api.get")
+    def test_match_record_by_id(self, mock_api_get):
+
+        # instantiate matcher and reset mock, them run just the method.
+        test_matcher = matching.ResourceMatcher(models.Publisher, id=1)
+        mock_api_get.reset_mock()
+
+        # Explicitly call record ID method
+        test_response = test_matcher._record_by_id()
+
+        # Check api called with correct params.
+        mock_api_get.assert_called_with(endpoint=models.Publisher.endpoint, resource_id=1)
+
+        # check response is correct format
+        assert test_response['list'][0] is mock_api_get()
 
     def test_invalid_keyword(self):
         with pytest.raises(exceptions.InvalidSearchFieldError):

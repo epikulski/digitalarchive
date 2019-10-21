@@ -32,6 +32,8 @@ class ResourceMatcher:
         # if this is a request for a single record by ID, return only the record
         if self.query.get("id"):
             response = self._record_by_id()
+            self.count = 1
+            self.list = (self.model(**item) for item in response["list"])
 
         # If no resource_id present, treat as a search.
         else:
