@@ -57,9 +57,42 @@ class TestDocument:
         for transcript in record.transcripts:
             assert isinstance(transcript, digitalarchive.Transcript)
 
-class Testcollection:
+class TestCollection:
 
     def test_match_by_keyword(self):
+        """Run a collection keyword search and confirm results are as expected."""
+        results = digitalarchive.Collection.match(name="soviet")
+        records = list(results.all())
 
-        records = digitalarchive.Collection.match(name="Soviet")
-        self.fail()
+        # Check we got all the promised records
+        assert len(records) == results.count
+
+        # Check they were properly parsed.
+        for record in records:
+            assert isinstance(record, digitalarchive.Collection)
+
+    def test_match_by_id(self):
+        results = digitalarchive.Collection.match(id="234")
+        record = results.first()
+
+        # Check some fields for expected values.
+        assert record.name == "China and the Soviet Union in Xinjiang, 1934-1949"
+        assert record.slug == "china-and-the-soviet-union-in-xinjiang-1934-1949"
+
+        # Check type
+        assert isinstance(record, digitalarchive.Collection)
+
+    def test_hydrate(self):
+        results = digitalarchive.Collection.match(name="soviet")
+        record = results.first()
+
+        # Check that unhydrated fields are none.
+        assert record.first_published_at is None
+        assert record.source_created_at is None
+
+        # Hydrate the record
+        record.hydrate()
+
+        # Check that fields are now populated.
+        assert record.first_published_at is not None
+        assert record.source_created_at is not None

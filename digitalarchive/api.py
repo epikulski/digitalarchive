@@ -42,7 +42,7 @@ def search(model: str, params: Optional[Dict] = None) -> dict:
             params[field] = params.get(field).id
 
     # Handle record searches. We transform some of the parameters.
-    if model in ["record", "collection"]:
+    if model == "record":
         # concatenate all of the keyword fields into the 'q' param
         keywords = []
         for field in ["name", "title", "description", "slug", "q"]:
@@ -51,12 +51,18 @@ def search(model: str, params: Optional[Dict] = None) -> dict:
         params["q"] = " ".join(keywords)
 
         # Strip out fields the search endpoint doesn't support.
+        # todo: raise an error here for "unsupported search field"?
         for field in ["name", "title", "description", "slug"]:
             if params.get(field) is not None:
                 params.pop(field)
 
         # Format the model name to match API docs.
         params["model"] = model.capitalize()
+
+        # Send query. Both collections and records use the records.json endpoint.
+        logging.debug("[*] Querying %s API endpoint with params: %s", model, str(params))
+        url = f"https://digitalarchive.wilsoncenter.org/srv/record.json"
+        response = SESSION.get(url, params=params)
 
     # Handle non record or collection searches. These always match on "term".
     else:
@@ -70,10 +76,10 @@ def search(model: str, params: Optional[Dict] = None) -> dict:
         elif params.get("value"):
             params["term"] = params["value"]
 
-    # Send Query.
-    logging.debug("[*] Querying %s API endpoint with params: %s", model, str(params))
-    url = f"https://digitalarchive.wilsoncenter.org/srv/{model}.json"
-    response = SESSION.get(url, params=params)
+        # Send Query.
+        logging.debug("[*] Querying %s API endpoint with params: %s", model, str(params))
+        url = f"https://digitalarchive.wilsoncenter.org/srv/{model}.json"
+        response = SESSION.get(url, params=params)
 
     # Bail out if non-200 response.
     if response.status_code != 200:

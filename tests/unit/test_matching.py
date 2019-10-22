@@ -20,7 +20,7 @@ class TestResourceMatcher:
     def test_match_by_keyword_single_page(self, mock_search):
         # Set up mock response.
         mock_search.return_value = {
-            "metadata": {"matches_estimated": 1},
+            "pagination": {"totalItems": 1},
             "list": [unittest.mock.MagicMock()],
         }
         matching.ResourceMatcher(models.Publisher, name="test_name")
@@ -36,7 +36,7 @@ class TestResourceMatcher:
     def test_match_by_keyword_multi_page(self, mock_search, mock_get_all):
         # Set up mock response.
         mock_search.return_value = {
-            "metadata": {"matches_estimated": 2},
+            "pagination": {"totalItems": 2},
             "list": [unittest.mock.MagicMock(), unittest.mock.MagicMock()],
         }
 
@@ -96,7 +96,7 @@ class TestResourceMatcher:
     def test_all(self, mock_search):
         # Set up mock response.
         mock_search.return_value = {
-            "metadata": {"matches_estimated": 2},
+            "pagination": {"totalItems": 2},
             "list": [{"id": 1, "name": "test1"}, {"id": 2, "name": "test2"}],
         }
 
@@ -115,14 +115,12 @@ class TestResourceMatcher:
     def test_get_all_search_results(self, mock_search):
         # Set up mock response.
         results_page_1 = {
-            "metadata": {"matches_estimated": 2},
-            "pagination": {"page": 1, "totalPages": 2},
+            "pagination": {"page": 1, "totalPages": 2, "totalItems": 2},
             "list": [{"id": 1, "name": "test1"}],
         }
 
         results_page_2 = {
-            "metadata": {"matches_estimated": 2},
-            "pagination": {"page": 2, "totalPages": 2},
+            "pagination": {"page": 2, "totalPages": 2, "totalItems": 2},
             "list": [{"id": 2, "name": "test1"}],
         }
         mock_search.side_effect = [results_page_1, results_page_1, results_page_2]

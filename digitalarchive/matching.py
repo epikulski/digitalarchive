@@ -44,7 +44,7 @@ class ResourceMatcher:
             )
 
             # pull out some metadata.
-            self.count = response["metadata"]["matches_estimated"]
+            self.count = response["pagination"]['totalItems']
 
             # If first page contains all results, set list
             if self.count <= self.query["itemsPerPage"]:

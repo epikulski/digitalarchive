@@ -62,8 +62,7 @@ class TestCollection:
         """Check appropriate model and kwargs passed to matching."""
         models.Collection.match(name="Soviet")
         mock_matching.ResourceMatcher.assert_called_with(
-            models.Collection, name="Soviet", model="Collection"
-        )
+            models.Collection, name="Soviet")
 
 
 class TestDocument:

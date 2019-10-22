@@ -166,19 +166,30 @@ class Coverage(Resource):
 
 @dataclass
 class Collection(Resource):
+    # Required Fields
     name: str
     slug: str
+
+    # Optional Fields
+    uri: Optional[str] = None
     parent: Optional[
         Any
     ] = None  # TODO: This should be Collection, figure out how to do it.
+
+    model: Optional[str] = None
+    value: Optional[str] = None
+    description: Optional[str] = None
+    short_description: Optional[str] = None
+    main_src: Optional[str] = None
+    thumb_src: Optional[str] = None
+    no_of_documents: Optional[str] = None
+    is_inactive: Optional[str] = None
+    source_created_at: Optional[str] = None
+    source_updated_at: Optional[str] = None
+    first_published_at: Optional[str] = None
+
+    # Internal Fields
     endpoint: str = "collection"
-
-    @classmethod
-    def match(cls, **kwargs) -> matching.ResourceMatcher:
-        """Custom matcher limits results to correct model."""
-        kwargs["model"] = "Collection"
-        return matching.ResourceMatcher(cls, **kwargs)
-
 
 @dataclass
 class Repository(Resource):

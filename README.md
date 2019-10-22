@@ -37,3 +37,9 @@ all_documents = Document.match()
 ## Planned Features
 * Support for searching by date range. 
 * Asynchronous hydration of large result sets.
+* Support searches for collections that include keyword hits from the collections `short_description` field by changing changing collection searches from the `collection.json` to `record.json` endpoint.  
+
+## Known bugs in the DigitalArchive API.
+These are known bugs in the DA's API that I have observed while developing this library. I've worked around them where possible.
+* The `Collection` model has inconsistent fields between searching via the record.json endpoint and the collection.json endpoint.
+
