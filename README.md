@@ -33,3 +33,7 @@ all_documents = Document.match()
 ## Disclaimers
 * This is an unofficial library. I am not affiliated with the Wilson Center in any way. It is my understanding that the API is unlikely to change in the near future, but I cannot guarantee that this library won't break without warning. 
 * If you plan to scrape the DA, please be respectful. 
+
+## Planned Features
+* Support for searching by date range. 
+* Asynchronous hydration of large result sets.
