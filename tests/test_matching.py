@@ -63,6 +63,7 @@ class TestResourceMatcher:
 
     @unittest.mock.patch("digitalarchive.api.get")
     def test_match_record_by_id(self, mock_api_get):
+        #pylint: disable=protected-access
 
         # instantiate matcher and reset mock, them run just the method.
         test_matcher = matching.ResourceMatcher(models.Publisher, id=1)
@@ -72,10 +73,12 @@ class TestResourceMatcher:
         test_response = test_matcher._record_by_id()
 
         # Check api called with correct params.
-        mock_api_get.assert_called_with(endpoint=models.Publisher.endpoint, resource_id=1)
+        mock_api_get.assert_called_with(
+            endpoint=models.Publisher.endpoint, resource_id=1
+        )
 
         # check response is correct format
-        assert test_response['list'][0] is mock_api_get()
+        assert test_response["list"][0] is mock_api_get()
 
     def test_invalid_keyword(self):
         with pytest.raises(exceptions.InvalidSearchFieldError):
@@ -124,7 +127,9 @@ class TestResourceMatcher:
         }
         mock_search.side_effect = [results_page_1, results_page_1, results_page_2]
 
-        test_matcher = matching.ResourceMatcher(models.Contributor, items_per_page=1, name="test_name")
+        test_matcher = matching.ResourceMatcher(
+            models.Contributor, items_per_page=1, name="test_name"
+        )
         mock_search.reset_mock()
         mock_search.side_effect = [results_page_1, results_page_2]
 
