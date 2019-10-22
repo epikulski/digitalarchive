@@ -32,8 +32,8 @@ class TestDocument:
         for record in records:
             assert isinstance(record, digitalarchive.Document)
 
-    def test_match_by_keyword_big(self):
-        """Check that we can handle a large search result."""
+    def test_match_by_keyword_multipage(self):
+        """Check that we can handle multi-page searches."""
         results = digitalarchive.Document.match(description="afghanistan")
         records = list(results.all())
 
@@ -56,3 +56,10 @@ class TestDocument:
 
         for transcript in record.transcripts:
             assert isinstance(transcript, digitalarchive.Transcript)
+
+class Testcollection:
+
+    def test_match_by_keyword(self):
+
+        records = digitalarchive.Collection.match(name="Soviet")
+        self.fail()
