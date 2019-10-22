@@ -32,6 +32,14 @@ class TestDocument:
         for record in records:
             assert isinstance(record, digitalarchive.Document)
 
+    def test_match_by_keyword_big(self):
+        """Check that we can handle a large search result."""
+        results = digitalarchive.Document.match(description="afghanistan")
+        records = list(results.all())
+
+        # Check we got all the promised records
+        assert len(records) == results.count
+
     def test_hydrate(self):
         # Fetch and hydrate a single record.
         results = digitalarchive.Document.match(description="soviet eurasia")

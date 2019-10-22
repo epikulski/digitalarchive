@@ -45,7 +45,7 @@ def search(model: str, params: Optional[Dict] = None) -> dict:
     if model in ["record", "collection"]:
         # concatenate all of the keyword fields into the 'q' param
         keywords = []
-        for field in ["name", "title", "description", "slug"]:
+        for field in ["name", "title", "description", "slug", "q"]:
             if params.get(field) is not None:
                 keywords.append(params.get(field))
         params["q"] = " ".join(keywords)
