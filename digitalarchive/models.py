@@ -37,13 +37,6 @@ class Resource:
         """Alias for Resource.pull"""
         self.pull()
 
-    def __eq__(self, other):
-        return self.id == other.id
-
-    def __hash__(self):
-        return hash(("id", self.id))
-
-
 @dataclass
 class Subject(Resource):
     name: str
