@@ -1,5 +1,5 @@
 """Test retrieving and parsing model from production DA API."""
-# pylint: disable=missing-class-docstring,missing-function-docstring,no-self-use
+# pylint: disable=missing-class-docstring,missing-function-docstring,no-self-use, too-few-public-methods
 
 # Application Modules
 import digitalarchive
@@ -57,8 +57,8 @@ class TestDocument:
         for transcript in record.transcripts:
             assert isinstance(transcript, digitalarchive.Transcript)
 
-class TestCollection:
 
+class TestCollection:
     def test_match_by_keyword(self):
         """Run a collection keyword search and confirm results are as expected."""
         results = digitalarchive.Collection.match(name="soviet")
@@ -96,3 +96,22 @@ class TestCollection:
         # Check that fields are now populated.
         assert record.first_published_at is not None
         assert record.source_created_at is not None
+
+
+class TestTranslation:
+    def test_hydrate(self):
+        """Test hydration method for digitalarchive.models._Asset"""
+        # Fetch a translation
+        test_doc = digitalarchive.Document.match(id=208400).first()
+        test_translation = test_doc.translations[0]
+
+        # Check expected fields are unhydrated
+        assert test_translation.html is None
+        assert test_translation.raw is None
+
+        # Hydrate the translation.
+        test_translation.hydrate()
+
+        # Confirm html fields are now present.
+        assert test_translation.html is not None
+        assert test_translation.raw is not None
