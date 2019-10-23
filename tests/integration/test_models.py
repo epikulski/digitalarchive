@@ -62,6 +62,7 @@ class TestDocument:
         results.hydrate()
         results = list(results.all())
 
+
 class TestCollection:
     def test_match_by_keyword(self):
         """Run a collection keyword search and confirm results are as expected."""
@@ -100,6 +101,21 @@ class TestCollection:
         # Check that fields are now populated.
         assert record.first_published_at is not None
         assert record.source_created_at is not None
+
+    def test_hydrate_resultset(self):
+        results = digitalarchive.Collection.match(description="europe")
+        results.hydrate()
+        results = list(results.all())
+
+        # Check all results are correct type.
+        for result in results:
+            assert isinstance(result, digitalarchive.Collection)
+
+        # Check that docs are hydrated.
+        for result in results:
+            assert result.uri is not None
+            assert result.no_of_documents is not None
+            assert result.description is not None
 
 
 class TestTranslation:

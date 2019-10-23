@@ -8,6 +8,7 @@ from __future__ import annotations
 
 # Standard Library
 import logging
+import copy
 from dataclasses import dataclass, field
 from typing import List, Any, Optional, Union
 
@@ -34,8 +35,27 @@ class Resource:
         self.__init__(**data)
 
     def hydrate(self):
-        """Alias for Resource.pull"""
+        """
+        Fix inconsistencies between views and hydrate.
+
+        Note: Some models expose inconsistent fields between
+        search results and when it is accessed directly via the
+        collection.json endpoint.
+        """
+        # Preserve unhydrated fields.
+        unhydrated_fields = copy.copy(self.__dict__)
+
+        # Hydrate
         self.pull()
+        hydrated_fields = vars(self)
+
+        # Merge fields
+        for key, value in unhydrated_fields.items():
+            if hydrated_fields.get(key) is None:
+                hydrated_fields[key] = value
+
+        # Re-initialize the object.
+        self.__init__(**hydrated_fields)
 
 
 @dataclass
@@ -194,7 +214,6 @@ class Collection(Resource):
 
     # Internal Fields
     endpoint: str = "collection"
-
 
 @dataclass
 class Repository(Resource):
