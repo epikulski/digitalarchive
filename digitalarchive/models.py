@@ -37,6 +37,7 @@ class Resource:
         """Alias for Resource.pull"""
         self.pull()
 
+
 @dataclass
 class Subject(Resource):
     name: str
@@ -62,6 +63,7 @@ class _Asset(Resource):
     Note: We don't define raw, html, or pdf here because they are not present on
     the stub version of Assets.
     """
+
     filename: str
     content_type: str
     extension: str
@@ -85,7 +87,9 @@ class _Asset(Resource):
         self.html = None
 
     def hydrate(self):
-        response = api.SESSION.get(f"https://digitalarchive.wilsoncenter.org/{self.url}")
+        response = api.SESSION.get(
+            f"https://digitalarchive.wilsoncenter.org/{self.url}"
+        )
 
         if response.status_code == 200:
             # Preserve the raw content from the DA in any case.
@@ -190,6 +194,7 @@ class Collection(Resource):
 
     # Internal Fields
     endpoint: str = "collection"
+
 
 @dataclass
 class Repository(Resource):
@@ -301,3 +306,14 @@ class Document(Resource):
         """
         kwargs["model"] = "Record"
         return matching.ResourceMatcher(cls, **kwargs)
+
+    def hydrate(self):
+        """Hydrates document and subordinate assets."""
+        # Hydrate the document
+        self.pull()
+
+        # Hydrate Assets
+        [transcript.hydrate() for transcript in self.transcripts]
+        [translation.hydrate() for translation in self.translations]
+        [media_file.hydrate() for media_file in self.media_files]
+        [collection.hydrate() for collection in self.collections]
