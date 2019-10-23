@@ -62,9 +62,6 @@ class TestDocument:
         results.hydrate()
         results = list(results.all())
 
-        self.fail()
-
-
 class TestCollection:
     def test_match_by_keyword(self):
         """Run a collection keyword search and confirm results are as expected."""
