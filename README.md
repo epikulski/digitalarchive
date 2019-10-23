@@ -7,7 +7,7 @@ A Python client for the Wilson Center's [Digital Archive](https://digitalarchive
 
 Usage
 -----
-```python
+```
 >>> import digitalarchive
 
 # Search for documents:
