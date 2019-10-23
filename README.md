@@ -6,6 +6,13 @@ Digital Archive
 
 A Python client for the Wilson Center's [Digital Archive](https://digitalarchive.wilsoncenter.org) ("DA") of historical primary sources. This library provides an ORM for searching and accessing documents and other resources in the Digital Archive. 
 
+Installation
+------------
+The client is available on pypi. It requires python 3.7+.
+```
+pip install digitalarchive
+```
+
 Usage
 -----
 ```
