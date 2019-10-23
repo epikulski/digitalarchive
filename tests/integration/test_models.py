@@ -57,6 +57,13 @@ class TestDocument:
         for transcript in record.transcripts:
             assert isinstance(transcript, digitalarchive.Transcript)
 
+    def test_hydrate_resultset(self):
+        results = digitalarchive.Document.match(description="soviet eurasia")
+        results.hydrate()
+        results = list(results.all())
+
+        self.fail()
+
 
 class TestCollection:
     def test_match_by_keyword(self):

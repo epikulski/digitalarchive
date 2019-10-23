@@ -86,3 +86,12 @@ class ResourceMatcher:
     def all(self) -> Generator[models.Resource, None, None]:
         """Return all records from a SearchResult."""
         return self.list
+
+    def hydrate(self):
+        # Fetch all the records.
+        self.list = list(self.list)
+
+        # Hydrate all the records.
+        for resource in self.list:
+            resource.hydrate()
+
