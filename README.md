@@ -4,7 +4,7 @@ Digital Archive
 [![codecov](https://codecov.io/gh/epikulski/digitalarchive/branch/master/graph/badge.svg?token=UOd5l8vX6b)](https://codecov.io/gh/epikulski/digitalarchive)
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/digitalarchive)
 
-A Python client for the Wilson Center's [Digital Archive](https://digitalarchive.wilsoncenter.org) ("DA") of historical primary sources. This library provides a ORM for searching and accessing documents and other resources in the Digital Archive. 
+A Python client for the Wilson Center's [Digital Archive](https://digitalarchive.wilsoncenter.org) ("DA") of historical primary sources. This library provides an ORM for searching and accessing documents and other resources in the Digital Archive. 
 
 Usage
 -----
