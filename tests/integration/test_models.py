@@ -52,10 +52,10 @@ class TestDocument:
         assert len(record.transcripts) != 0
 
         for translation in record.translations:
-            assert isinstance(translation, digitalarchive.Translation)
+            assert isinstance(translation, digitalarchive.models.Translation)
 
         for transcript in record.transcripts:
-            assert isinstance(transcript, digitalarchive.Transcript)
+            assert isinstance(transcript, digitalarchive.models.Transcript)
 
     def test_hydrate_resultset(self):
         results = digitalarchive.Document.match(description="soviet eurasia")
