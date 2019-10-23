@@ -1,17 +1,22 @@
 language: python
 python:
-  - "3.7"
-  - "3.7-dev"  # 3.7 development branch
-  - "3.8"
-  - "3.8-dev"  # 3.8 development branch
-  - "nightly"  # nightly build
-# command to install dependencies
+- '3.7'
+- 3.7-dev
+- '3.8'
+- 3.8-dev
+- nightly
 install:
-  - pip install -r requirements.txt
-# command to run tests
+- pip install -r requirements.txt
 script:
-  - py.test --cov-report term --cov=digitalarchive
-  - coverage report --fail-under=100
-
+- py.test --cov-report term --cov=digitalarchive
+- coverage report --fail-under=100
 after_success:
-  - codecov
+- codecov
+deploy:
+  provider: pypi
+  user: __token__
+  password:
+    secure: MfgfEXkXUUWKZPOqQpwwmVN+QDghKZSSWJT+yFZMZs3JSUuJeGFy6djRSpNsKVDQmca83dTjRNexhu0JTemqEwDoXE0P8HZV5+3p0olliF++OIiX5oZ8znIoNLOHrgbXOECDlh3gsGxTg22WeVp6JzQYOQCW8ukXDRyApf2Zam0nU+S0GexIBMqoxJPUdUFmfn/BqUI2SdKxxi38B1jno9FaM5j4i3o3Aomh+U4ilxv2WC/stu0uL8UpfFxIGzrqr/T0nNrsRPEfZQMzcRvnRatBeKQFXeINb6krt1ttb98IpyEObBHD9rLila7FABf5ysYhPvQnNxBQ0zCdmI3tDjgUOFASCQ1/j9u+9m5rxFWig+kFjwamAeun0UfNugPI2ZUZ9dYYrHkBOWHSPNyoJkozMbIhw9ksRTUZ0i38fvS6GpYSGvuX16Lx803fdYyFuesKyEHdcP2jaNSmkEH1+p1Ddf57uleIlris4jMRj5t2yq9Ubze6qAhCpdkKB73EWJwqkQt4M5CD4kimUzVn0aay91BT/bjMmHHL9a153rMjxjFJLB555gfLyMm30QMIsX5gWiy+O4+5pZgHWcGdG1KHQ4uFacpsmwCvbwsXJndM7/CTKrXJ/PgZbRygh1Y8WLXuY1PxNT4WBqPS2Fvvuj0HpzGcS1f4Su12XPF5xqg=
+  on:
+    tags: true
+    branch: master
