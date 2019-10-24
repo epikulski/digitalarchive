@@ -9,13 +9,19 @@ from __future__ import annotations
 # Standard Library
 import logging
 import copy
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import List, Any, Optional, Union
 
 # Application Modules
 import digitalarchive.matching as matching
 import digitalarchive.api as api
 import digitalarchive.exceptions as exceptions
+
+
+class UnhydratedField:
+    """A field that may be populated after the model is hydrated."""
+
+    pass
 
 
 @dataclass(eq=False)
@@ -74,7 +80,7 @@ class _HydrateableResource(_Resource):
 
         # Merge fields
         for key, value in unhydrated_fields.items():
-            if hydrated_fields.get(key) is None:
+            if hydrated_fields.get(key) is UnhydratedField:
                 hydrated_fields[key] = value
 
         # Re-initialize the object.
@@ -86,8 +92,8 @@ class Subject(_MatchableResource, _HydrateableResource):
     name: str
 
     # Optional fields
-    uri: Optional[str] = None
-    value: Optional[str] = None
+    uri: Union[str, UnhydratedField] = UnhydratedField
+    value: Union[str, UnhydratedField] = UnhydratedField
 
     # Private fields
     endpoint: str = "subject"
@@ -95,7 +101,7 @@ class Subject(_MatchableResource, _HydrateableResource):
 
 @dataclass(eq=False)
 class Language(_Resource):
-    name: Optional[str] = None
+    name: Union[str, UnhydratedField] = UnhydratedField
 
 
 @dataclass(eq=False)
@@ -106,6 +112,7 @@ class _Asset(_HydrateableResource):
     Note: We don't define raw, html, or pdf here because they are not present on
     the stub version of Assets.
     """
+    # pylint: disable=too-many-instance-attributes
 
     filename: str
     content_type: str
@@ -124,10 +131,10 @@ class _Asset(_HydrateableResource):
         the MediaFile record type has a 'path' field instead of a 'url' field,
         which makes inheritance of a shared hydrate method awkward.
         """
-        self.url = None
-        self.raw = None
-        self.pdf = None
-        self.html = None
+        self.url = UnhydratedField
+        self.raw = UnhydratedField
+        self.pdf = UnhydratedField
+        self.html = UnhydratedField
 
     def hydrate(self):
         response = api.SESSION.get(
@@ -159,9 +166,9 @@ class _Asset(_HydrateableResource):
 @dataclass(eq=False)
 class Transcript(_Asset):
     url: str
-    html: Optional[str] = None
-    pdf: Optional[bytes] = None
-    raw: Optional[bytes] = None
+    html: Union[str, UnhydratedField] = UnhydratedField
+    pdf: Union[str, UnhydratedField] = UnhydratedField
+    raw: Union[str, UnhydratedField] = UnhydratedField
 
     def __post_init__(self):
         """See note on _Asset __post_init__ function."""
@@ -172,9 +179,9 @@ class Transcript(_Asset):
 class Translation(_Asset):
     url: str
     language: Union[Language, dict]
-    html: Optional[str] = None
-    pdf: Optional[bytes] = None
-    raw: Optional[bytes] = None
+    html: Union[str, UnhydratedField] = UnhydratedField
+    pdf: Union[str, UnhydratedField] = UnhydratedField
+    raw: Union[str, UnhydratedField] = UnhydratedField
 
     def __post_init__(self):
         self.language = Language(**self.language)
@@ -183,9 +190,9 @@ class Translation(_Asset):
 @dataclass(eq=False)
 class MediaFile(_Asset):
     path: str
-    raw: Optional[bytes] = None
-    html: Optional[str] = None
-    pdf: Optional[str] = None
+    raw: Union[str, UnhydratedField] = UnhydratedField
+    html: Union[str, UnhydratedField] = UnhydratedField
+    pdf: Union[str, UnhydratedField] = UnhydratedField
 
     def __post_init__(self):
         self.url: str = self.path
@@ -213,27 +220,28 @@ class Coverage(_MatchableResource, _HydrateableResource):
 
 @dataclass(eq=False)
 class Collection(_MatchableResource, _HydrateableResource):
+    # pylint: disable=too-many-instance-attributes
     # Required Fields
     name: str
     slug: str
 
     # Optional Fields
-    uri: Optional[str] = None
+    uri: Union[str, UnhydratedField] = UnhydratedField
     parent: Optional[
         Any
-    ] = None  # TODO: This should be Collection, figure out how to do it.
+    ] = UnhydratedField  # TODO: This should be Collection, figure out how to do it.
 
-    model: Optional[str] = None
-    value: Optional[str] = None
-    description: Optional[str] = None
-    short_description: Optional[str] = None
-    main_src: Optional[str] = None
-    thumb_src: Optional[str] = None
-    no_of_documents: Optional[str] = None
-    is_inactive: Optional[str] = None
-    source_created_at: Optional[str] = None
-    source_updated_at: Optional[str] = None
-    first_published_at: Optional[str] = None
+    model: Union[str, UnhydratedField] = UnhydratedField
+    value: Union[str, UnhydratedField] = UnhydratedField
+    description: Union[str, UnhydratedField] = UnhydratedField
+    short_description: Union[str, UnhydratedField] = UnhydratedField
+    main_src: Union[str, UnhydratedField] = UnhydratedField
+    thumb_src: Union[str, UnhydratedField] = UnhydratedField
+    no_of_documents: Union[str, UnhydratedField] = UnhydratedField
+    is_inactive: Union[str, UnhydratedField] = UnhydratedField
+    source_created_at: Union[str, UnhydratedField] = UnhydratedField
+    source_updated_at: Union[str, UnhydratedField] = UnhydratedField
+    first_published_at: Union[str, UnhydratedField] = UnhydratedField
 
     # Internal Fields
     endpoint: str = "collection"
@@ -242,8 +250,8 @@ class Collection(_MatchableResource, _HydrateableResource):
 @dataclass(eq=False)
 class Repository(_MatchableResource, _HydrateableResource):
     name: str
-    uri: Optional[str] = None
-    value: Optional[str] = None
+    uri: Union[str, UnhydratedField] = UnhydratedField
+    value: Union[str, UnhydratedField] = UnhydratedField
     endpoint: str = "repository"
 
 
@@ -287,42 +295,64 @@ class Document(_MatchableResource, _HydrateableResource):
     first_published_at: str
 
     # Optional Fields
-    source: Optional[str] = None
-    type: Optional[Type] = None
-    rights: Optional[Right] = None
-    pdf_generated_at: Optional[str] = None
-    date_range_start: Optional[str] = None
-    sort_string_by_coverage: Optional[str] = None
+    source: Union[str, UnhydratedField] = UnhydratedField
+    type: Union[Type, UnhydratedField] = UnhydratedField
+    rights: Union[Right, UnhydratedField] = UnhydratedField
+    pdf_generated_at: Union[str, UnhydratedField] = UnhydratedField
+    date_range_start: Union[str, UnhydratedField] = UnhydratedField
+    sort_string_by_coverage: Union[str, UnhydratedField] = UnhydratedField
     main_src: Optional[
         Any
-    ] = None  # TODO: Never seen one of these in the while, so not sure how to handle.
-    model: Optional[str] = None
+    ] = UnhydratedField  # TODO: Never seen one of these in the while, so not sure how to handle.
+    model: Union[str, UnhydratedField] = UnhydratedField
 
     # Optional Lists:
 
-    donors: List[Donor] = field(default_factory=list)
-    subjects: List[Subject] = field(default_factory=list)
-    transcripts: List[Transcript] = field(default_factory=list)
-    translations: List[Translation] = field(default_factory=list)
-    media_files: List[MediaFile] = field(default_factory=list)
-    languages: List[Language] = field(default_factory=list)
-    contributors: List[Contributor] = field(default_factory=list)
-    creators: List[Contributor] = field(default_factory=list)
-    original_coverages: List[Coverage] = field(default_factory=list)
-    collections: List[Collection] = field(default_factory=list)
-    attachments: List[Any] = field(
-        default_factory=list
-    )  # TODO: Should be "document" -- fix.
-    links: List[Any] = field(default_factory=list)  # TODO: Should be "document" -- fix.
-    repositories: List[Repository] = field(default_factory=list)
-    publishers: List[Publisher] = field(default_factory=list)
-    classifications: List[Classification] = field(default_factory=list)
+    donors: Union[List[Donor], UnhydratedField] = UnhydratedField
+    subjects: Union[List[Subject], UnhydratedField] = UnhydratedField
+    transcripts: Union[List[Transcript], UnhydratedField] = UnhydratedField
+    translations: Union[List[Translation], UnhydratedField] = UnhydratedField
+    media_files: Union[List[MediaFile], UnhydratedField] = UnhydratedField
+    languages: Union[List[Language], UnhydratedField] = UnhydratedField
+    contributors: Union[List[Contributor], UnhydratedField] = UnhydratedField
+    creators: Union[List[Contributor], UnhydratedField] = UnhydratedField
+    original_coverages: Union[List[Coverage], UnhydratedField] = UnhydratedField
+    collections: Union[List[Collection], UnhydratedField] = UnhydratedField
+    attachments: Union[
+        List[Any], UnhydratedField
+    ] = UnhydratedField  # TODO: Should be "document" -- fix.
+    links: Union[
+        List[Any], UnhydratedField
+    ] = UnhydratedField  # TODO: Should be "document" -- fix.
+    repositories: Union[List[Repository], UnhydratedField] = UnhydratedField
+    publishers: Union[List[Publisher], UnhydratedField] = UnhydratedField
+    classifications: Union[List[Classification], UnhydratedField] = UnhydratedField
 
     # Private properties
     endpoint: str = "record"
 
     def __post_init__(self):
         """Process lists of subordinate classes."""
+        # If we are dealing with an unhydrated record, don't process child records.
+        for field in [
+            "subjects",
+            "transcripts",
+            "media_files",
+            "languages",
+            "creators",
+            "attachments",
+            "links",
+            "publishers",
+            "translations",
+            "contributors",
+            "original_coverages",
+            "repositories",
+            "classifications",
+        ]:
+            if self.__getattribute__(field) is UnhydratedField:
+                return
+
+        # Otherwise, unpack and transform related resources into appropriate dataclass.
         self.subjects = [Subject(**subject) for subject in self.subjects]
         self.transcripts = [Transcript(**transcript) for transcript in self.transcripts]
         self.media_files = [MediaFile(**media_file) for media_file in self.media_files]

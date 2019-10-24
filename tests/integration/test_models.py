@@ -92,15 +92,15 @@ class TestCollection:
         record = results.first()
 
         # Check that unhydrated fields are none.
-        assert record.first_published_at is None
-        assert record.source_created_at is None
+        assert record.first_published_at is digitalarchive.models.UnhydratedField
+        assert record.source_created_at is digitalarchive.models.UnhydratedField
 
         # Hydrate the record
         record.hydrate()
 
         # Check that fields are now populated.
-        assert record.first_published_at is not None
-        assert record.source_created_at is not None
+        assert record.first_published_at is not digitalarchive.models.UnhydratedField
+        assert record.source_created_at is not digitalarchive.models.UnhydratedField
 
     def test_hydrate_resultset(self):
         results = digitalarchive.Collection.match(description="europe")
@@ -113,9 +113,9 @@ class TestCollection:
 
         # Check that docs are hydrated.
         for result in results:
-            assert result.uri is not None
-            assert result.no_of_documents is not None
-            assert result.description is not None
+            assert result.uri is not digitalarchive.models.UnhydratedField
+            assert result.no_of_documents is not digitalarchive.models.UnhydratedField
+            assert result.description is not digitalarchive.models.UnhydratedField
 
 
 class TestTranslation:
@@ -127,12 +127,12 @@ class TestTranslation:
         test_translation = test_doc.translations[0]
 
         # Check expected fields are unhydrated
-        assert test_translation.html is None
-        assert test_translation.raw is None
+        assert test_translation.html is digitalarchive.models.UnhydratedField
+        assert test_translation.raw is digitalarchive.models.UnhydratedField
 
         # Hydrate the translation.
         test_translation.hydrate()
 
         # Confirm html fields are now present.
-        assert test_translation.html is not None
-        assert test_translation.raw is not None
+        assert test_translation.html is not digitalarchive.models.UnhydratedField
+        assert test_translation.raw is not digitalarchive.models.UnhydratedField
