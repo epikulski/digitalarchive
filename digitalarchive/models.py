@@ -18,17 +18,27 @@ import digitalarchive.api as api
 import digitalarchive.exceptions as exceptions
 
 
-@dataclass
+@dataclass(eq=False)
 class _Resource:
     """
     Abstract parent class for all DigitalArchive objects.
 
-    todo: Add custom __eq__ method.
+    We add custom hash and eq fields so hydrated and unhydrated records are equal.
     """
 
     id: str
 
+    def __hash__(self):
+        return hash(self.id)
 
+    def __eq__(self, other):
+        if not self.__class__ == other.__class__:
+            return NotImplemented
+        else:
+            return self.id == other.id
+
+
+@dataclass(eq=False)
 class _MatchableResource(_Resource):
     """Abstract class for Resources that can be searched against."""
 
@@ -38,6 +48,7 @@ class _MatchableResource(_Resource):
         return matching.ResourceMatcher(cls, **kwargs)
 
 
+@dataclass(eq=False)
 class _HydrateableResource(_Resource):
     """Abstract class for Resources that can be accessed and hydrated individually."""
 
@@ -70,7 +81,7 @@ class _HydrateableResource(_Resource):
         self.__init__(**hydrated_fields)
 
 
-@dataclass
+@dataclass(eq=False)
 class Subject(_MatchableResource, _HydrateableResource):
     name: str
 
@@ -82,12 +93,12 @@ class Subject(_MatchableResource, _HydrateableResource):
     endpoint: str = "subject"
 
 
-@dataclass
+@dataclass(eq=False)
 class Language(_Resource):
     name: Optional[str] = None
 
 
-@dataclass
+@dataclass(eq=False)
 class _Asset(_HydrateableResource):
     """
     Abstract class representing fpr Translations, Transcriptions, and MediaFiles.
@@ -145,7 +156,7 @@ class _Asset(_HydrateableResource):
             )
 
 
-@dataclass
+@dataclass(eq=False)
 class Transcript(_Asset):
     url: str
     html: Optional[str] = None
@@ -157,7 +168,7 @@ class Transcript(_Asset):
         pass  # pylint: disable=unnecessary-pass
 
 
-@dataclass
+@dataclass(eq=False)
 class Translation(_Asset):
     url: str
     language: Union[Language, dict]
@@ -169,7 +180,7 @@ class Translation(_Asset):
         self.language = Language(**self.language)
 
 
-@dataclass
+@dataclass(eq=False)
 class MediaFile(_Asset):
     path: str
     raw: Optional[bytes] = None
@@ -180,19 +191,19 @@ class MediaFile(_Asset):
         self.url: str = self.path
 
 
-@dataclass
+@dataclass(eq=False)
 class Contributor(_MatchableResource, _HydrateableResource):
     name: str
     endpoint: str = "contributor"
 
 
-@dataclass
+@dataclass(eq=False)
 class Donor(_Resource):
     name: str
     endpoint: str = "donor"
 
 
-@dataclass
+@dataclass(eq=False)
 class Coverage(_MatchableResource, _HydrateableResource):
     uri: str
     name: str
@@ -200,7 +211,7 @@ class Coverage(_MatchableResource, _HydrateableResource):
     endpoint: str = "coverage"
 
 
-@dataclass
+@dataclass(eq=False)
 class Collection(_MatchableResource, _HydrateableResource):
     # Required Fields
     name: str
@@ -228,7 +239,7 @@ class Collection(_MatchableResource, _HydrateableResource):
     endpoint: str = "collection"
 
 
-@dataclass
+@dataclass(eq=False)
 class Repository(_MatchableResource, _HydrateableResource):
     name: str
     uri: Optional[str] = None
@@ -236,30 +247,30 @@ class Repository(_MatchableResource, _HydrateableResource):
     endpoint: str = "repository"
 
 
-@dataclass
+@dataclass(eq=False)
 class Publisher(_Resource):
     name: str
     value: str
     endpoint: str = "publisher"
 
 
-@dataclass
+@dataclass(eq=False)
 class Type(_Resource):
     name: str
 
 
-@dataclass
+@dataclass(eq=False)
 class Right(_Resource):
     name: str
     rights: str
 
 
-@dataclass
+@dataclass(eq=False)
 class Classification(_Resource):
     name: str
 
 
-@dataclass
+@dataclass(eq=False)
 class Document(_MatchableResource, _HydrateableResource):
 
     # pylint: disable=too-many-instance-attributes

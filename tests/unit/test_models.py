@@ -8,13 +8,15 @@ import pytest
 import digitalarchive.models as models
 
 
-class TestResource:
+class TestMatchableResource:
     @unittest.mock.patch("digitalarchive.models.matching")
     def test_match(self, mock_matching):
         """Check appropriate model and kwargs passed to matching."""
         models.Subject.match(name="Soviet")
         mock_matching.ResourceMatcher.assert_called_with(models.Subject, name="Soviet")
 
+
+class TestHydrateableResource:
     @unittest.mock.patch("digitalarchive.models.api")
     def test_pull(self, mock_api):
         """Check appropriate endpoint and ID passed to get function."""
@@ -74,6 +76,85 @@ class TestDocument:
         mock_matching.ResourceMatcher.assert_called_with(
             models.Document, name="Soviet", model="Record"
         )
+
+    def test_valid_eq(self):
+        """Compare a search result doc and a hydrated doc."""
+        hydrated_doc = models.Document(
+            id=1,
+            uri="test",
+            title="test",
+            description="test",
+            doc_date="test",
+            frontend_doc_date="test",
+            slug="test",
+            source_created_at="test",
+            source_updated_at="test",
+            first_published_at="test",
+        )
+        unhydrated_doc = models.Document(
+            id=1,
+            uri="test",
+            title="test",
+            description="test",
+            doc_date="test",
+            frontend_doc_date="test",
+            slug="test",
+            source_created_at="test",
+            source_updated_at="test",
+            first_published_at="test",
+            pdf_generated_at="test_pdf_date",
+        )
+
+        assert hydrated_doc == unhydrated_doc
+
+    def test_invalid_eq(self):
+        doc1 = models.Document(
+            id="1",
+            uri="test",
+            title="test",
+            description="test",
+            doc_date="test",
+            frontend_doc_date="test",
+            slug="test",
+            source_created_at="test",
+            source_updated_at="test",
+            first_published_at="test",
+        )
+        doc2 = models.Document(
+            id="2",
+            uri="test",
+            title="test",
+            description="test",
+            doc_date="test",
+            frontend_doc_date="test",
+            slug="test",
+            source_created_at="test",
+            source_updated_at="test",
+            first_published_at="test",
+        )
+        assert doc1 != doc2
+
+    def test_invalid_eq_class(self):
+        collection = models.Subject(id="1", name="test_collection")
+        contributor = models.Contributor(id="1", name="test_contributor")
+        assert collection != contributor
+
+    def test_hash(self):
+        # Create dummy records.
+        contributor_1 = models.Contributor(id="1", name="test")
+        contributor_2 = models.Contributor(id="2", name="test")
+        contributor_3 = models.Contributor(id="3", name="test")
+        contributor_1_dupe = models.Contributor(id="1", name="test2")
+
+        # Create two overlapping sets.
+        contributor_set_1 = set([contributor_1, contributor_2])
+        contributor_set_2 = set([contributor_1_dupe, contributor_3])
+
+        # Merge sets
+        merged = contributor_set_1 | contributor_set_2
+
+        # Confirm merged sets has no dupes.
+        assert merged == {contributor_1, contributor_2, contributor_3}
 
 
 class TestAsset:
