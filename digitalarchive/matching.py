@@ -13,7 +13,11 @@ import digitalarchive.exceptions as exceptions
 class ResourceMatcher:
     """Wraps instances of models.Resource to provide search functionality. """
 
-    def __init__(self, resource_model: models.Resource, items_per_page=200, **kwargs):
+    # pylint: disable=potected-access
+
+    def __init__(
+        self, resource_model: models._MatchableResource, items_per_page=200, **kwargs
+    ):
         """
         Wrapper for search and query related functions.
         :param resource_model: A DA model object from digitalarchive.models
@@ -21,7 +25,7 @@ class ResourceMatcher:
         """
         self.model = resource_model
         self.query = kwargs
-        self.list: Generator[models.Resource, None, None]
+        self.list: Generator[models._Resource, None, None]
         self.count: int
 
         # Check that search keywords are valid for given model.
@@ -39,12 +43,10 @@ class ResourceMatcher:
         else:
             # Fetch the first page of records from the API.
             self.query["itemsPerPage"] = items_per_page
-            response = api.search(
-                model=self.model.endpoint, params=self.query
-            )
+            response = api.search(model=self.model.endpoint, params=self.query)
 
             # pull out some metadata.
-            self.count = response["pagination"]['totalItems']
+            self.count = response["pagination"]["totalItems"]
 
             # If first page contains all results, set list
             if self.count <= self.query["itemsPerPage"]:
@@ -62,16 +64,14 @@ class ResourceMatcher:
         # Wrap the response for SearchResult
         return {"list": [response]}
 
-    def _get_all_search_results(self, response) -> models.Resource:
+    def _get_all_search_results(self, response) -> models._MatchableResource:
         """Create Generator to handle search result pagination."""
         page = response["pagination"]["page"]
 
         while page <= response["pagination"]["totalPages"]:
             # Yield resources in the current request.
             self.query["page"] = page
-            response = api.search(
-                model=self.model.endpoint, params=self.query
-            )
+            response = api.search(model=self.model.endpoint, params=self.query)
             resources = [self.model(**item) for item in response["list"]]
             for resource in resources:
                 yield resource
@@ -79,19 +79,19 @@ class ResourceMatcher:
             # Fetch new resources if needed.
             page += 1
 
-    def first(self) -> models.Resource:
+    def first(self) -> models._MatchableResource:
         """Return only the first record from a SearchResult."""
         return next(self.list)
 
-    def all(self) -> Generator[models.Resource, None, None]:
+    def all(self) -> Generator[models._MatchableResource, None, None]:
         """Return all records from a SearchResult."""
         return self.list
 
     def hydrate(self):
+        """Hydrate all of the Resources in a resultset."""
         # Fetch all the records.
         self.list = list(self.list)
 
         # Hydrate all the records.
         for resource in self.list:
             resource.hydrate()
-

@@ -19,15 +19,27 @@ import digitalarchive.exceptions as exceptions
 
 
 @dataclass
-class Resource:
-    """Abstract parent class for all DigitalArchive objects."""
+class _Resource:
+    """
+    Abstract parent class for all DigitalArchive objects.
+
+    todo: Add custom __eq__ method.
+    """
 
     id: str
+
+
+class _MatchableResource(_Resource):
+    """Abstract class for Resources that can be searched against."""
 
     @classmethod
     def match(cls, **kwargs) -> matching.ResourceMatcher:
         """Find a record based on passed kwargs. Returns all if none passed"""
         return matching.ResourceMatcher(cls, **kwargs)
+
+
+class _HydrateableResource(_Resource):
+    """Abstract class for Resources that can be accessed and hydrated individually."""
 
     def pull(self):
         """Update a given record using data from the remote DA."""
@@ -59,7 +71,7 @@ class Resource:
 
 
 @dataclass
-class Subject(Resource):
+class Subject(_MatchableResource, _HydrateableResource):
     name: str
 
     # Optional fields
@@ -71,12 +83,12 @@ class Subject(Resource):
 
 
 @dataclass
-class Language(Resource):
+class Language(_Resource):
     name: Optional[str] = None
 
 
 @dataclass
-class _Asset(Resource):
+class _Asset(_HydrateableResource):
     """
     Abstract class representing fpr Translations, Transcriptions, and MediaFiles.
 
@@ -169,19 +181,19 @@ class MediaFile(_Asset):
 
 
 @dataclass
-class Contributor(Resource):
+class Contributor(_MatchableResource, _HydrateableResource):
     name: str
     endpoint: str = "contributor"
 
 
 @dataclass
-class Donor(Resource):
+class Donor(_Resource):
     name: str
     endpoint: str = "donor"
 
 
 @dataclass
-class Coverage(Resource):
+class Coverage(_MatchableResource, _HydrateableResource):
     uri: str
     name: str
     parent: Any
@@ -189,7 +201,7 @@ class Coverage(Resource):
 
 
 @dataclass
-class Collection(Resource):
+class Collection(_MatchableResource, _HydrateableResource):
     # Required Fields
     name: str
     slug: str
@@ -215,8 +227,9 @@ class Collection(Resource):
     # Internal Fields
     endpoint: str = "collection"
 
+
 @dataclass
-class Repository(Resource):
+class Repository(_MatchableResource, _HydrateableResource):
     name: str
     uri: Optional[str] = None
     value: Optional[str] = None
@@ -224,30 +237,30 @@ class Repository(Resource):
 
 
 @dataclass
-class Publisher(Resource):
+class Publisher(_Resource):
     name: str
     value: str
     endpoint: str = "publisher"
 
 
 @dataclass
-class Type(Resource):
+class Type(_Resource):
     name: str
 
 
 @dataclass
-class Right(Resource):
+class Right(_Resource):
     name: str
     rights: str
 
 
 @dataclass
-class Classification(Resource):
+class Classification(_Resource):
     name: str
 
 
 @dataclass
-class Document(Resource):
+class Document(_MatchableResource, _HydrateableResource):
 
     # pylint: disable=too-many-instance-attributes
 

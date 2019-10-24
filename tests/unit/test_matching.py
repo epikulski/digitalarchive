@@ -1,5 +1,5 @@
 """Unit Tests of matching digitalarchive.matching."""
-# pylint: disable=missing-function-docstring, no-self-use,too-few-public-methods
+# pylint: disable=missing-function-docstring, no-self-use,too-few-public-methods,protected-access
 
 # Standard Library
 import unittest.mock
@@ -51,7 +51,7 @@ class TestResourceMatcher:
         """Test Search API called with proper params."""
         # Run match
         mock_get_by_id.return_value = {"list": [{"id": 1}]}
-        test_match = matching.ResourceMatcher(models.Resource, id=1)
+        test_match = matching.ResourceMatcher(models._Resource, id=1)
 
         # Check search called with proper params.
         mock_get_by_id.assert_called_once()
@@ -59,7 +59,7 @@ class TestResourceMatcher:
         # Inspect list for proper data
         match_results = list(test_match.list)
         assert len(match_results) == 1
-        assert isinstance(match_results[0], models.Resource)
+        assert isinstance(match_results[0], models._Resource)
 
     @unittest.mock.patch("digitalarchive.api.get")
     def test_match_record_by_id(self, mock_api_get):
@@ -82,15 +82,15 @@ class TestResourceMatcher:
 
     def test_invalid_keyword(self):
         with pytest.raises(exceptions.InvalidSearchFieldError):
-            models.Resource.match(test="test")
+            models._MatchableResource.match(test="test")
 
     @unittest.mock.patch("digitalarchive.matching.ResourceMatcher._record_by_id")
     def test_first(self, mock_get_by_id):
         # Run match
         mock_get_by_id.return_value = {"list": [{"id": 1}]}
-        test_match = matching.ResourceMatcher(models.Resource, id=1).first()
+        test_match = matching.ResourceMatcher(models._Resource, id=1).first()
 
-        assert isinstance(test_match, models.Resource)
+        assert isinstance(test_match, models._Resource)
 
     @unittest.mock.patch("digitalarchive.api.search")
     def test_all(self, mock_search):

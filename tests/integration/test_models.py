@@ -119,6 +119,7 @@ class TestCollection:
 
 
 class TestTranslation:
+
     def test_hydrate(self):
         """Test hydration method for digitalarchive.models._Asset"""
         # Fetch a translation
