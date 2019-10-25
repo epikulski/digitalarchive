@@ -112,6 +112,7 @@ class _Asset(_HydrateableResource):
     Note: We don't define raw, html, or pdf here because they are not present on
     the stub version of Assets.
     """
+
     # pylint: disable=too-many-instance-attributes
 
     filename: str
@@ -368,7 +369,10 @@ class Document(_MatchableResource, _HydrateableResource):
             else:
                 sample_resource = self.__getattribute__(field)[0]
                 if isinstance(sample_resource, dict):
-                    parsed_resources = [child_fields[field](**resource) for resource in self.__getattribute__(field)]
+                    parsed_resources = [
+                        child_fields[field](**resource)
+                        for resource in self.__getattribute__(field)
+                    ]
                     setattr(self, field, parsed_resources)
 
     @classmethod
@@ -407,4 +411,3 @@ class Document(_MatchableResource, _HydrateableResource):
         [translation.hydrate() for translation in self.translations]
         [media_file.hydrate() for media_file in self.media_files]
         [collection.hydrate() for collection in self.collections]
-
