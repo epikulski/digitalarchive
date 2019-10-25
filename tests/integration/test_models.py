@@ -166,3 +166,33 @@ class TestSubject:
         # Check they were properly parsed.
         for record in records:
             assert isinstance(record, digitalarchive.Subject)
+
+    def test_match_by_id(self):
+        results = digitalarchive.Subject.match(id="1311")
+        record = results.first()
+
+        # Check type
+        assert isinstance(record, digitalarchive.Subject)
+
+        # Check some fields for expected values.
+        assert record.name == "Iraq--Foreign relations--Soviet Union"
+        assert record.uri == "/srv/subject/1311.json"
+
+    def test_hydrate(self):
+        # Fetch a document
+        test_doc = digitalarchive.Document.match(id=208400).first()
+        test_subject = test_doc.subjects[0]
+
+        # Check record is unhydrated
+        assert test_subject.uri is digitalarchive.models.UnhydratedField
+        assert test_subject.value is digitalarchive.models.UnhydratedField
+
+        # Hydrate the record
+        test_subject.hydrate()
+
+        # Check new fields are there.
+        for field in test_subject.__dataclass_fields__:
+            assert (
+                test_subject.__getattribute__(field)
+                is not digitalarchive.models.UnhydratedField
+            )
