@@ -137,6 +137,11 @@ class _Asset(_HydrateableResource):
         self.html = UnhydratedField
 
     def hydrate(self):
+        """
+
+        TODO: after hydrating, confirm there are no UnhydratedField instances.-- They should be None instead.
+        :return:
+        """
         response = api.SESSION.get(
             f"https://digitalarchive.wilsoncenter.org/{self.url}"
         )
