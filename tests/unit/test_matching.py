@@ -63,7 +63,7 @@ class TestResourceMatcher:
 
     @unittest.mock.patch("digitalarchive.api.get")
     def test_match_record_by_id(self, mock_api_get):
-        #pylint: disable=protected-access
+        # pylint: disable=protected-access
 
         # instantiate matcher and reset mock, them run just the method.
         test_matcher = matching.ResourceMatcher(models.Publisher, id=1)
@@ -138,3 +138,13 @@ class TestResourceMatcher:
         assert len(results) == 2
         for result in results:
             assert isinstance(result, models.Contributor)
+
+    @unittest.mock.patch("digitalarchive.matching.ResourceMatcher._record_by_id")
+    def test_repr(self, mock_get_by_id):
+        # Run match
+        mock_get_by_id.return_value = {"list": [{"id": 1}]}
+        test_match = matching.ResourceMatcher(models._Resource, id=1)
+        assert (
+            str(test_match)
+            == "ResourceMatcher(model=<class 'digitalarchive.models._Resource'>, query={'id': 1}, count=1)"
+        )
