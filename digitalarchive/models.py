@@ -186,7 +186,7 @@ class Translation(_Asset):
     raw: Union[str, UnhydratedField] = UnhydratedField
 
     def __post_init__(self):
-        self.language = Language(**self.language)
+        self.language = Language(*self.language)
 
 
 @dataclass(eq=False)
@@ -335,42 +335,41 @@ class Document(_MatchableResource, _HydrateableResource):
 
     def __post_init__(self):
         """Process lists of subordinate classes."""
-        # If we are dealing with an unhydrated record, don't process child records.
-        for field in [
-            "subjects",
-            "transcripts",
-            "media_files",
-            "languages",
-            "creators",
-            "attachments",
-            "links",
-            "publishers",
-            "translations",
-            "contributors",
-            "original_coverages",
-            "repositories",
-            "classifications",
-        ]:
+        child_fields = {
+            "subjects": Subject,
+            "transcripts": Transcript,
+            "media_files": MediaFile,
+            "languages": Language,
+            "creators": Contributor,
+            "collections": Collection,
+            "attachments": Document,
+            "links": Document,
+            "publishers": Publisher,
+            "translations": Translation,
+            "contributors": Contributor,
+            "original_coverages": Coverage,
+            "repositories": Repository,
+            "classifications": Classification,
+        }
+
+        # If we are dealing with an unhydrated record, don't attempt to process child records.
+        for field in child_fields:
             if self.__getattribute__(field) is UnhydratedField:
                 return
 
-        # Otherwise, unpack and transform related resources into appropriate dataclass.
-        self.subjects = [Subject(**subject) for subject in self.subjects]
-        self.transcripts = [Transcript(**transcript) for transcript in self.transcripts]
-        self.media_files = [MediaFile(**media_file) for media_file in self.media_files]
-        self.languages = [Language(**language) for language in self.languages]
-        self.creators = [Contributor(**creator) for creator in self.creators]
-        self.collections = [Collection(**collection) for collection in self.collections]
-        self.attachments = [Document(**attachment) for attachment in self.attachments]
-        self.links = [Document(**document) for document in self.links]
-        self.publishers = [Publisher(**publisher) for publisher in self.publishers]
-        self.translations = [Translation(**transl) for transl in self.translations]
-        self.contributors = [Contributor(**contrib) for contrib in self.contributors]
-        self.original_coverages = [Coverage(**cov) for cov in self.original_coverages]
-        self.repositories = [Repository(**repo) for repo in self.repositories]
-        self.classifications = [
-            Classification(**classification) for classification in self.classifications
-        ]
+        # If record is hydrated, transform child records to appropriate model.
+        for field in child_fields:
+
+            # Check if list is empty, skip if yes.
+            if len(self.__getattribute__(field)) == 0:
+                pass
+
+            # If field is a list of dicts, transform those dicts to models and update self.
+            else:
+                sample_resource = self.__getattribute__(field)[0]
+                if isinstance(sample_resource, dict):
+                    parsed_resources = [child_fields[field](**resource) for resource in self.__getattribute__(field)]
+                    setattr(self, field, parsed_resources)
 
     @classmethod
     def match(cls, **kwargs) -> matching.ResourceMatcher:
@@ -383,12 +382,29 @@ class Document(_MatchableResource, _HydrateableResource):
         return matching.ResourceMatcher(cls, **kwargs)
 
     def hydrate(self):
-        """Hydrates document and subordinate assets."""
-        # Hydrate the document
+        """
+        Hydrates document and subordinate assets.
+
+        todo: See if i can implement the hydration and merge steps using super from _HydrateableResource
+        """
+        # Preserve unhydrated fields.
+        unhydrated_fields = copy.copy(self.__dict__)
+
+        # Hydrate
         self.pull()
+        hydrated_fields = vars(self)
+
+        # Merge fields
+        for key, value in unhydrated_fields.items():
+            if hydrated_fields.get(key) is UnhydratedField:
+                hydrated_fields[key] = value
+
+        # Re-initialize the object.
+        self.__init__(**hydrated_fields)
 
         # Hydrate Assets
         [transcript.hydrate() for transcript in self.transcripts]
         [translation.hydrate() for translation in self.translations]
         [media_file.hydrate() for media_file in self.media_files]
         [collection.hydrate() for collection in self.collections]
+

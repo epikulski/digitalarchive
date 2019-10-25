@@ -32,6 +32,11 @@ class TestDocument:
         for record in records:
             assert isinstance(record, digitalarchive.Document)
 
+        # Check that there are data in the results:
+        for record in records:
+            assert record.description is not None
+
+
     def test_match_by_keyword_multipage(self):
         """Check that we can handle multi-page searches."""
         results = digitalarchive.Document.match(description="afghanistan")
@@ -40,16 +45,28 @@ class TestDocument:
         # Check we got all the promised records
         assert len(records) == results.count
 
+        # Check that record types are as expected.
+        for record in records:
+            assert isinstance(record, digitalarchive.Document)
+
+
     def test_hydrate(self):
         # Fetch and hydrate a single record.
         results = digitalarchive.Document.match(description="soviet eurasia")
         records = list(results.all())
         record = records[0]
+
+        # Check that fields start unhydrated.
+        assert record.translations is digitalarchive.models.UnhydratedField
+        assert record.transcripts is digitalarchive.models.UnhydratedField
         record.hydrate()
 
         # Check that expected fields were hydrated.
         assert len(record.translations) != 0
         assert len(record.transcripts) != 0
+
+        for field in record.__dataclass_fields__.keys():
+            assert record.__getattribute__(field) is not digitalarchive.models.UnhydratedField
 
         for translation in record.translations:
             assert isinstance(translation, digitalarchive.models.Translation)
@@ -60,7 +77,8 @@ class TestDocument:
     def test_hydrate_resultset(self):
         results = digitalarchive.Document.match(description="soviet eurasia")
         results.hydrate()
-        results = list(results.all())
+        results = results.all()
+
 
 
 class TestCollection:
