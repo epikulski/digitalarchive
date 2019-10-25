@@ -13,7 +13,7 @@ import digitalarchive.exceptions as exceptions
 class ResourceMatcher:
     """Wraps instances of models.Resource to provide search functionality. """
 
-    # pylint: disable=potected-access
+    # pylint: disable=protected-access
 
     def __init__(
         self, resource_model: models._MatchableResource, items_per_page=200, **kwargs
@@ -55,6 +55,9 @@ class ResourceMatcher:
             # Set up generator to serve remaining results.
             else:
                 self.list = self._get_all_search_results(response)
+
+    def __repr__(self):
+        return f"ResourceMatcher(model={self.model}, query={self.query}, count={self.count})"
 
     def _record_by_id(self) -> dict:
         """Get a single record by ID."""

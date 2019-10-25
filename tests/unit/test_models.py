@@ -47,6 +47,19 @@ class TestHydrateableResource:
             "source_created_at": "111111",
             "first_published_at": "111111",
             "source": "Test Source",
+            "subjects": [],
+            "transcripts": [],
+            "media_files": [],
+            "languages": [],
+            "creators": [],
+            "collections": [],
+            "attachments": [],
+            "links": [],
+            "translations": [],
+            "contributors": [],
+            "original_coverages": [],
+            "repositories": [],
+            "classifications": []
         }
 
         mock_api.get.return_value = mock_hydrated_doc_json
@@ -173,10 +186,10 @@ class TestAsset:
         )
 
         # Make sure url, raw, pdf, html exist but are empty.
-        assert test_asset.url is None
-        assert test_asset.raw is None
-        assert test_asset.pdf is None
-        assert test_asset.html is None
+        assert test_asset.url is models.UnhydratedField
+        assert test_asset.raw is models.UnhydratedField
+        assert test_asset.pdf is models.UnhydratedField
+        assert test_asset.html is models.UnhydratedField
 
 
 class TestTranscript:
@@ -251,8 +264,8 @@ class TestTranscript:
         mock_requests.get.assert_called()
 
         # Make sure pdf and html are blank.
-        assert mock_transcript.html is None
-        assert mock_transcript.pdf is None
+        assert mock_transcript.html is models.UnhydratedField
+        assert mock_transcript.pdf is models.UnhydratedField
 
     @unittest.mock.patch("digitalarchive.models.api.SESSION")
     def test_hydrate_server_error(self, mock_requests, mock_transcript):

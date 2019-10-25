@@ -32,6 +32,11 @@ class TestDocument:
         for record in records:
             assert isinstance(record, digitalarchive.Document)
 
+        # Check that there are data in the results:
+        for record in records:
+            assert record.description is not None
+
+
     def test_match_by_keyword_multipage(self):
         """Check that we can handle multi-page searches."""
         results = digitalarchive.Document.match(description="afghanistan")
@@ -40,16 +45,28 @@ class TestDocument:
         # Check we got all the promised records
         assert len(records) == results.count
 
+        # Check that record types are as expected.
+        for record in records:
+            assert isinstance(record, digitalarchive.Document)
+
+
     def test_hydrate(self):
         # Fetch and hydrate a single record.
         results = digitalarchive.Document.match(description="soviet eurasia")
         records = list(results.all())
         record = records[0]
+
+        # Check that fields start unhydrated.
+        assert record.translations is digitalarchive.models.UnhydratedField
+        assert record.transcripts is digitalarchive.models.UnhydratedField
         record.hydrate()
 
         # Check that expected fields were hydrated.
         assert len(record.translations) != 0
         assert len(record.transcripts) != 0
+
+        for field in record.__dataclass_fields__.keys():
+            assert record.__getattribute__(field) is not digitalarchive.models.UnhydratedField
 
         for translation in record.translations:
             assert isinstance(translation, digitalarchive.models.Translation)
@@ -60,7 +77,8 @@ class TestDocument:
     def test_hydrate_resultset(self):
         results = digitalarchive.Document.match(description="soviet eurasia")
         results.hydrate()
-        results = list(results.all())
+        results = results.all()
+
 
 
 class TestCollection:
@@ -92,15 +110,15 @@ class TestCollection:
         record = results.first()
 
         # Check that unhydrated fields are none.
-        assert record.first_published_at is None
-        assert record.source_created_at is None
+        assert record.first_published_at is digitalarchive.models.UnhydratedField
+        assert record.source_created_at is digitalarchive.models.UnhydratedField
 
         # Hydrate the record
         record.hydrate()
 
         # Check that fields are now populated.
-        assert record.first_published_at is not None
-        assert record.source_created_at is not None
+        assert record.first_published_at is not digitalarchive.models.UnhydratedField
+        assert record.source_created_at is not digitalarchive.models.UnhydratedField
 
     def test_hydrate_resultset(self):
         results = digitalarchive.Collection.match(description="europe")
@@ -113,9 +131,9 @@ class TestCollection:
 
         # Check that docs are hydrated.
         for result in results:
-            assert result.uri is not None
-            assert result.no_of_documents is not None
-            assert result.description is not None
+            assert result.uri is not digitalarchive.models.UnhydratedField
+            assert result.no_of_documents is not digitalarchive.models.UnhydratedField
+            assert result.description is not digitalarchive.models.UnhydratedField
 
 
 class TestTranslation:
@@ -127,12 +145,12 @@ class TestTranslation:
         test_translation = test_doc.translations[0]
 
         # Check expected fields are unhydrated
-        assert test_translation.html is None
-        assert test_translation.raw is None
+        assert test_translation.html is digitalarchive.models.UnhydratedField
+        assert test_translation.raw is digitalarchive.models.UnhydratedField
 
         # Hydrate the translation.
         test_translation.hydrate()
 
         # Confirm html fields are now present.
-        assert test_translation.html is not None
-        assert test_translation.raw is not None
+        assert test_translation.html is not digitalarchive.models.UnhydratedField
+        assert test_translation.raw is not digitalarchive.models.UnhydratedField
