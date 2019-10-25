@@ -137,11 +137,6 @@ class _Asset(_HydrateableResource):
         self.html = UnhydratedField
 
     def hydrate(self):
-        """
-
-        TODO: after hydrating, confirm there are no UnhydratedField instances.-- They should be None instead.
-        :return:
-        """
         response = api.SESSION.get(
             f"https://digitalarchive.wilsoncenter.org/{self.url}"
         )
@@ -153,8 +148,10 @@ class _Asset(_HydrateableResource):
             # Add add helper attributes for the common filetypes.
             if self.extension == "html":
                 self.html = response.text
+                self.pdf = None
             elif self.extension == "pdf":
                 self.pdf = response.content
+                self.html = None
             else:
                 logging.warning(
                     "[!] Unknown file format '%s' encountered!", self.extension
