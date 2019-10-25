@@ -36,7 +36,6 @@ class TestDocument:
         for record in records:
             assert record.description is not None
 
-
     def test_match_by_keyword_multipage(self):
         """Check that we can handle multi-page searches."""
         results = digitalarchive.Document.match(description="afghanistan")
@@ -48,7 +47,6 @@ class TestDocument:
         # Check that record types are as expected.
         for record in records:
             assert isinstance(record, digitalarchive.Document)
-
 
     def test_hydrate(self):
         # Fetch and hydrate a single record.
@@ -66,7 +64,10 @@ class TestDocument:
         assert len(record.transcripts) != 0
 
         for field in record.__dataclass_fields__.keys():
-            assert record.__getattribute__(field) is not digitalarchive.models.UnhydratedField
+            assert (
+                record.__getattribute__(field)
+                is not digitalarchive.models.UnhydratedField
+            )
 
         for translation in record.translations:
             assert isinstance(translation, digitalarchive.models.Translation)
@@ -78,7 +79,6 @@ class TestDocument:
         results = digitalarchive.Document.match(description="soviet eurasia")
         results.hydrate()
         results = results.all()
-
 
 
 class TestCollection:
@@ -137,7 +137,6 @@ class TestCollection:
 
 
 class TestTranslation:
-
     def test_hydrate(self):
         """Test hydration method for digitalarchive.models._Asset"""
         # Fetch a translation
@@ -154,3 +153,16 @@ class TestTranslation:
         # Confirm html fields are now present.
         assert test_translation.html is not digitalarchive.models.UnhydratedField
         assert test_translation.raw is not digitalarchive.models.UnhydratedField
+
+
+class TestSubject:
+    def test_match_by_keyword(self):
+        results = digitalarchive.Subject.match(name="soviet")
+        records = list(results.all())
+
+        # Check we got all the promised records
+        assert len(records) == results.count
+
+        # Check they were properly parsed.
+        for record in records:
+            assert isinstance(record, digitalarchive.Subject)
