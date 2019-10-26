@@ -41,7 +41,6 @@ class _Resource:
         else:
             return self.id == other.id
 
-
 @dataclass(eq=False)
 class _MatchableResource(_Resource):
     """Abstract class for Resources that can be searched against."""
@@ -83,6 +82,25 @@ class _HydrateableResource(_Resource):
 
         # Re-initialize the object.
         self.__init__(**hydrated_fields)
+
+class _TimestampedResource(_Resource):
+
+    def _process_dates(self):
+        # Turn date fields from strings into datetimes.
+        datetime_fields = [
+            "source_created_at",
+            "source_updated_at",
+            "first_published_at",
+        ]
+
+        for field in datetime_fields:
+            if not (
+                self.__getattribute__(field) is UnhydratedField
+                or isinstance(self.__getattribute__(field), datetime)
+            ):
+                setattr(
+                    self, field, datetime.fromisoformat(self.__getattribute__(field))
+                )
 
 
 @dataclass(eq=False)
@@ -252,7 +270,7 @@ class Coverage(_MatchableResource, _HydrateableResource):
 
 
 @dataclass(eq=False)
-class Collection(_MatchableResource, _HydrateableResource):
+class Collection(_MatchableResource, _HydrateableResource, _TimestampedResource):
     # pylint: disable=too-many-instance-attributes
     # Required Fields
     name: str
@@ -281,21 +299,7 @@ class Collection(_MatchableResource, _HydrateableResource):
 
     def __post_init__(self):
         # Turn date fields from strings into datetimes.
-        datetime_fields = [
-            "source_created_at",
-            "source_updated_at",
-            "first_published_at",
-        ]
-
-        for field in datetime_fields:
-            if not (
-                self.__getattribute__(field) is UnhydratedField
-                or isinstance(self.__getattribute__(field), datetime)
-            ):
-                setattr(
-                    self, field, datetime.fromisoformat(self.__getattribute__(field))
-                )
-
+        self._process_dates()
 
 @dataclass(eq=False)
 class Repository(_MatchableResource, _HydrateableResource):
@@ -329,7 +333,7 @@ class Classification(_Resource):
 
 
 @dataclass(eq=False)
-class Document(_MatchableResource, _HydrateableResource):
+class Document(_MatchableResource, _HydrateableResource, _TimestampedResource):
 
     # pylint: disable=too-many-instance-attributes
 
@@ -421,6 +425,9 @@ class Document(_MatchableResource, _HydrateableResource):
                         for resource in self.__getattribute__(field)
                     ]
                     setattr(self, field, parsed_resources)
+
+        # Process DA dates.
+        self._process_dates()
 
     @classmethod
     def match(cls, **kwargs) -> matching.ResourceMatcher:
