@@ -20,7 +20,6 @@ import digitalarchive.exceptions as exceptions
 
 class UnhydratedField:
     """A field that may be populated after the model is hydrated."""
-
     pass
 
 
@@ -217,10 +216,40 @@ class Donor(_Resource):
 
 @dataclass(eq=False)
 class Coverage(_MatchableResource, _HydrateableResource):
+    """
+    todo: instances of "any" below should be models.Coverage.
+    """
     uri: str
     name: str
-    parent: Any
+    value: Union[str, UnhydratedField] = UnhydratedField
+    parent: Union[Any, UnhydratedField, None] = UnhydratedField
+    children: Union[Any, UnhydratedField] = UnhydratedField
     endpoint: str = "coverage"
+
+    def __post_init__(self):
+        """
+
+        DA returns dicts for parent in some cases, empty lists in others. Standardize on None.
+
+        We also parse the children and parent fields, if they are present.
+        """
+        if isinstance(self.parent, list):
+            self.parent = None
+
+        # Parse the parent, if it is present.
+        if not (
+            isinstance(self.parent, Coverage) or
+            self.parent is None or
+            self.parent is UnhydratedField
+        ):
+            self.parent = Coverage(**self.parent)
+
+        # If children are unhydrated or already parsed, don't attempt to parse
+        if not (
+            self.children is UnhydratedField or
+            isinstance(self.children[0], Coverage)
+        ):
+            self.children = [Coverage(**child) for child in self.children]
 
 
 @dataclass(eq=False)

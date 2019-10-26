@@ -225,9 +225,14 @@ class TestRepository:
         assert isinstance(repo, digitalarchive.models.Repository)
 
         # Check some fields.
-        assert repo.name == "Conflict Records Research Center, National Defense University"
+        assert (
+            repo.name == "Conflict Records Research Center, National Defense University"
+        )
         assert repo.uri == "/srv/repository/5.json"
-        assert repo.value == "Conflict Records Research Center, National Defense University"
+        assert (
+            repo.value
+            == "Conflict Records Research Center, National Defense University"
+        )
 
     def test_match_by_keyword(self):
         # Search for some records.
@@ -239,6 +244,7 @@ class TestRepository:
 
         for repo in repos:
             assert isinstance(repo, digitalarchive.models.Repository)
+
 
 class TestContributor:
     def test_match_by_id(self):
@@ -283,3 +289,53 @@ class TestContributor:
                 test_contributor.__getattribute__(field)
                 is not digitalarchive.models.UnhydratedField
             )
+
+
+class TestCoverage:
+    def test_match_by_id(self):
+        coverage = digitalarchive.Coverage.match(id="295").first()
+
+        # Check for some expected fields.
+        assert isinstance(coverage, digitalarchive.Coverage)
+        assert coverage.parent is None
+        assert len(coverage.children) != 0
+        assert coverage.name == "Central Africa"
+        assert coverage.value == "Central Africa"
+        assert coverage.uri == "/srv/coverage/295.json"
+
+    def test_match_by_keyword(self):
+        results = digitalarchive.Coverage.match(name="Africa")
+        coverages = list(results.all())
+
+        # Inspect results.
+        assert results.count == len(coverages)
+        for coverage in coverages:
+            assert isinstance(coverage, digitalarchive.Coverage)
+
+    def test_hydrate(self):
+        results = digitalarchive.Coverage.match(name="Africa")
+        coverage = results.first()
+
+        # Confirm fields start dehydrated
+        assert coverage.children is digitalarchive.models.UnhydratedField
+        assert coverage.parent is digitalarchive.models.UnhydratedField
+
+        # Hydrate the field
+        coverage.hydrate()
+
+        # Check fields are now hydrated
+        assert coverage.children is not digitalarchive.models.UnhydratedField
+        assert coverage.parent is not digitalarchive.models.UnhydratedField
+
+        for coverage in coverage.children:
+            assert isinstance(coverage, digitalarchive.Coverage)
+
+    def test_hydrate_resultset(self):
+        results = digitalarchive.Coverage.match(name="Africa")
+        results.hydrate()
+        coverage = list(results.all())
+
+        # Check that there are no unhydrated fields in the resultant records.
+        for coverage in coverage:
+            assert coverage.parent is not digitalarchive.models.UnhydratedField
+            assert coverage.children is not digitalarchive.models.UnhydratedField
