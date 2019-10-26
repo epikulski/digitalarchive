@@ -9,6 +9,7 @@ from __future__ import annotations
 # Standard Library
 import logging
 import copy
+from datetime import datetime
 from dataclasses import dataclass
 from typing import List, Any, Optional, Union
 
@@ -20,6 +21,7 @@ import digitalarchive.exceptions as exceptions
 
 class UnhydratedField:
     """A field that may be populated after the model is hydrated."""
+
     pass
 
 
@@ -219,6 +221,7 @@ class Coverage(_MatchableResource, _HydrateableResource):
     """
     todo: instances of "any" below should be models.Coverage.
     """
+
     uri: str
     name: str
     value: Union[str, UnhydratedField] = UnhydratedField
@@ -238,16 +241,15 @@ class Coverage(_MatchableResource, _HydrateableResource):
 
         # Parse the parent, if it is present.
         if not (
-            isinstance(self.parent, Coverage) or
-            self.parent is None or
-            self.parent is UnhydratedField
+            isinstance(self.parent, Coverage)
+            or self.parent is None
+            or self.parent is UnhydratedField
         ):
             self.parent = Coverage(**self.parent)
 
         # If children are unhydrated or already parsed, don't attempt to parse
         if not (
-            self.children is UnhydratedField or
-            isinstance(self.children[0], Coverage)
+            self.children is UnhydratedField or isinstance(self.children[0], Coverage)
         ):
             self.children = [Coverage(**child) for child in self.children]
 
@@ -273,12 +275,29 @@ class Collection(_MatchableResource, _HydrateableResource):
     thumb_src: Union[str, UnhydratedField] = UnhydratedField
     no_of_documents: Union[str, UnhydratedField] = UnhydratedField
     is_inactive: Union[str, UnhydratedField] = UnhydratedField
-    source_created_at: Union[str, UnhydratedField] = UnhydratedField
-    source_updated_at: Union[str, UnhydratedField] = UnhydratedField
-    first_published_at: Union[str, UnhydratedField] = UnhydratedField
+    source_created_at: Union[str, UnhydratedField, datetime] = UnhydratedField
+    source_updated_at: Union[str, UnhydratedField, datetime] = UnhydratedField
+    first_published_at: Union[str, UnhydratedField, datetime] = UnhydratedField
 
     # Internal Fields
     endpoint: str = "collection"
+
+    def __post_init__(self):
+        # Turn date fields from strings into datetimes.
+        datetime_fields = [
+            "source_created_at",
+            "source_updated_at",
+            "first_published_at",
+        ]
+
+        for field in datetime_fields:
+            if not (
+                self.__getattribute__(field) is UnhydratedField
+                or isinstance(self.__getattribute__(field), datetime)
+            ):
+                setattr(
+                    self, field, datetime.fromisoformat(self.__getattribute__(field))
+                )
 
 
 @dataclass(eq=False)

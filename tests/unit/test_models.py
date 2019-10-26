@@ -2,6 +2,7 @@
 # pylint: disable = missing-docstring, no-self-use, too-few-public-methods
 
 import unittest.mock
+from datetime import datetime
 
 import pytest
 
@@ -59,7 +60,7 @@ class TestHydrateableResource:
             "contributors": [],
             "original_coverages": [],
             "repositories": [],
-            "classifications": []
+            "classifications": [],
         }
 
         mock_api.get.return_value = mock_hydrated_doc_json
@@ -79,6 +80,31 @@ class TestCollection:
         mock_matching.ResourceMatcher.assert_called_with(
             models.Collection, name="Soviet"
         )
+
+    def test_datetime_parsing(self):
+        # Create a mock collection.
+        collection = models.Collection(
+            id=1,
+            name="test",
+            slug="test",
+            source_created_at="2019-10-26 15:43:11",
+            source_updated_at="2019-10-26 15:43:11",
+            first_published_at="2019-10-26 15:43:11",
+        )
+
+        # Check that datetimes were properly generated.
+        assert isinstance(collection.source_updated_at, datetime)
+        assert isinstance(collection.source_created_at, datetime)
+        assert isinstance(collection.first_published_at, datetime)
+
+        # Check that datetimes are accurate.
+        expected_date = datetime(2019, 10, 26, 15, 43, 11)
+        for field in [
+            collection.source_created_at,
+            collection.source_updated_at,
+            collection.first_published_at,
+        ]:
+            assert field == expected_date
 
 
 class TestDocument:
