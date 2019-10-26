@@ -239,3 +239,47 @@ class TestRepository:
 
         for repo in repos:
             assert isinstance(repo, digitalarchive.models.Repository)
+
+class TestContributor:
+    def test_match_by_id(self):
+        # Fetch a known record.
+        results = digitalarchive.Contributor.match(id="5")
+        contributor = results.first()
+
+        # Check type
+        assert isinstance(contributor, digitalarchive.models.Contributor)
+
+        # Check some fields.
+        assert contributor.name[:9] == "Agostinho"
+        assert contributor.value[:9] == "Agostinho"
+        assert contributor.uri == "/srv/contributor/5.json"
+
+    def test_match_by_keyword(self):
+        # Search for some records.
+        results = digitalarchive.Contributor.match(name="John")
+        repos = list(results.all())
+
+        # Inspect results
+        assert len(repos) == results.count
+
+        for repo in repos:
+            assert isinstance(repo, digitalarchive.models.Contributor)
+
+    def test_hydrate(self):
+        # Get a document & contributor
+        test_doc = digitalarchive.Document.match(id=177540).first()
+        test_contributor = test_doc.contributors[0]
+
+        # make sure they start blank
+        assert test_contributor.uri is digitalarchive.models.UnhydratedField
+        assert test_contributor.value is digitalarchive.models.UnhydratedField
+
+        # Hydrate the model
+        test_contributor.hydrate()
+
+        # Check new fields are there.
+        for field in test_contributor.__dataclass_fields__:
+            assert (
+                test_contributor.__getattribute__(field)
+                is not digitalarchive.models.UnhydratedField
+            )

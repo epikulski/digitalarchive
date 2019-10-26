@@ -204,6 +204,8 @@ class MediaFile(_Asset):
 @dataclass(eq=False)
 class Contributor(_MatchableResource, _HydrateableResource):
     name: str
+    value: Union[UnhydratedField, str] = UnhydratedField
+    uri: Union[UnhydratedField, str] = UnhydratedField
     endpoint: str = "contributor"
 
 

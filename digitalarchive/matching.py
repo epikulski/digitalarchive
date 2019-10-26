@@ -46,7 +46,7 @@ class ResourceMatcher:
             response = api.search(model=self.model.endpoint, params=self.query)
 
             # Calculate pagination, with special handling for Subjects & Repositories, which don't conform.
-            if self.model in [models.Subject, models.Repository]:
+            if self.model in [models.Subject, models.Repository, models.Contributor]:
                 self.count = len(response['list'])
             else:
                 self.count = response["pagination"]["totalItems"]
