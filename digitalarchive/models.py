@@ -353,7 +353,7 @@ class Document(_MatchableResource, _HydrateableResource, _TimestampedResource):
     type: Union[Type, UnhydratedField] = UnhydratedField
     rights: Union[Right, UnhydratedField] = UnhydratedField
     pdf_generated_at: Union[str, UnhydratedField] = UnhydratedField
-    date_range_start: Union[str, UnhydratedField] = UnhydratedField
+    date_range_start: Union[str, date, UnhydratedField] = UnhydratedField
     sort_string_by_coverage: Union[str, UnhydratedField] = UnhydratedField
     main_src: Optional[
         Any
@@ -387,6 +387,21 @@ class Document(_MatchableResource, _HydrateableResource, _TimestampedResource):
 
     def __post_init__(self):
         """Process lists of subordinate classes."""
+
+        # Parse related records
+        self._parse_child_records()
+
+        # Process DA timestamps.
+        self._process_timestamps()
+
+        # Process the date_range_start field to facilitate searches.
+        if isinstance(self.date_range_start, str):
+            year = int(self.date_range_start[:4])
+            month = int(self.date_range_start[4:6])
+            day = int(self.date_range_start[-2:])
+            self.date_range_start = date(year, month, day)
+
+    def _parse_child_records(self):
         child_fields = {
             "subjects": Subject,
             "transcripts": Transcript,
@@ -425,18 +440,6 @@ class Document(_MatchableResource, _HydrateableResource, _TimestampedResource):
                         for resource in self.__getattribute__(field)
                     ]
                     setattr(self, field, parsed_resources)
-
-        # Process DA timestamps.
-        self._process_timestamps()
-
-        # todo: Write parsing logic for 'doc_date' and 'date_range_start'
-        # Process the date_range_start field to enable searches.
-        if isinstance(self.date_range_start, str):
-            year = int(self.date_range_start[:4])
-            month = int(self.date_range_start[4:6])
-            day = int(self.date_range_start[-2:])
-            self.date_range_start = date(year, month, day)
-
 
     @classmethod
     def match(cls, **kwargs) -> matching.ResourceMatcher:
