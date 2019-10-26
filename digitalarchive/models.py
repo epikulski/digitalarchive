@@ -94,10 +94,7 @@ class _TimestampedResource(_Resource):
         ]
 
         for field in datetime_fields:
-            if not (
-                self.__getattribute__(field) is UnhydratedField
-                or isinstance(self.__getattribute__(field), datetime)
-            ):
+            if isinstance(self.__getattribute__(field), str):
                 setattr(
                     self, field, datetime.fromisoformat(self.__getattribute__(field))
                 )
