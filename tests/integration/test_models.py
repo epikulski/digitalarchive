@@ -196,3 +196,46 @@ class TestSubject:
                 test_subject.__getattribute__(field)
                 is not digitalarchive.models.UnhydratedField
             )
+
+    def test_hydrate_resultset(self):
+        results = digitalarchive.Subject.match(name="Burma")
+        results.hydrate()
+        results = list(results.all())
+
+        # Check all results are correct type.
+        for result in results:
+            assert isinstance(result, digitalarchive.Subject)
+
+        # Check new fields are there.
+        for result in results:
+            for field in result.__dataclass_fields__:
+                assert (
+                    result.__getattribute__(field)
+                    is not digitalarchive.models.UnhydratedField
+                )
+
+
+class TestRepository:
+    def test_match_by_id(self):
+        # Fetch a known record.
+        results = digitalarchive.Repository.match(id="5")
+        repo = results.first()
+
+        # Check type
+        assert isinstance(repo, digitalarchive.models.Repository)
+
+        # Check some fields.
+        assert repo.name == "Conflict Records Research Center, National Defense University"
+        assert repo.uri == "/srv/repository/5.json"
+        assert repo.value == "Conflict Records Research Center, National Defense University"
+
+    def test_match_by_keyword(self):
+        # Search for some records.
+        results = digitalarchive.Repository.match(name="Russian")
+        repos = list(results.all())
+
+        # Inspect results
+        assert len(repos) == results.count
+
+        for repo in repos:
+            assert isinstance(repo, digitalarchive.models.Repository)
