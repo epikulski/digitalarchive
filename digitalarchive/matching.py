@@ -2,6 +2,7 @@
 
 # Standard Library
 from __future__ import annotations
+import logging
 from typing import Generator
 
 # Application modules
@@ -27,6 +28,12 @@ class ResourceMatcher:
         self.query = kwargs
         self.list: Generator[models._Resource, None, None]
         self.count: int
+
+        # Prevent running date range searches against unsupported models.
+        for key in ["start_date", "end_date"]:
+            if key in kwargs.keys() and resource_model is not models.Document:
+                logging.error("[!] Date range searches supported only for digitalarchive.Document model.")
+                raise exceptions.InvalidSearchFieldError
 
         # Check that search keywords are valid for given model.
         for key in self.query:

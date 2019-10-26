@@ -80,6 +80,10 @@ class TestDocument:
         results.hydrate()
         results = results.all()
 
+    def test_date_range(self):
+        results = digitalarchive.Document.match(start_date="19500101", end_date="19500101")
+
+        self.fail()
 
 class TestCollection:
     def test_match_by_keyword(self):
