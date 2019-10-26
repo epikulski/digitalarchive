@@ -1,7 +1,4 @@
-"""ORM Models for DigitalArchive resource types.
-
-todo: figure out a better way to represent unhydrated fields than 'none'.
-"""
+"""ORM Models for DigitalArchive resource types."""
 # pylint: disable=missing-class-docstring
 
 from __future__ import annotations
@@ -9,6 +6,7 @@ from __future__ import annotations
 # Standard Library
 import logging
 import copy
+from datetime import datetime, date
 from dataclasses import dataclass
 from typing import List, Any, Optional, Union
 
@@ -20,6 +18,7 @@ import digitalarchive.exceptions as exceptions
 
 class UnhydratedField:
     """A field that may be populated after the model is hydrated."""
+
     pass
 
 
@@ -41,7 +40,6 @@ class _Resource:
             return NotImplemented
         else:
             return self.id == other.id
-
 
 @dataclass(eq=False)
 class _MatchableResource(_Resource):
@@ -84,6 +82,22 @@ class _HydrateableResource(_Resource):
 
         # Re-initialize the object.
         self.__init__(**hydrated_fields)
+
+class _TimestampedResource(_Resource):
+
+    def _process_timestamps(self):
+        # Turn date fields from strings into datetimes.
+        datetime_fields = [
+            "source_created_at",
+            "source_updated_at",
+            "first_published_at",
+        ]
+
+        for field in datetime_fields:
+            if isinstance(self.__getattribute__(field), str):
+                setattr(
+                    self, field, datetime.fromisoformat(self.__getattribute__(field))
+                )
 
 
 @dataclass(eq=False)
@@ -219,6 +233,7 @@ class Coverage(_MatchableResource, _HydrateableResource):
     """
     todo: instances of "any" below should be models.Coverage.
     """
+
     uri: str
     name: str
     value: Union[str, UnhydratedField] = UnhydratedField
@@ -238,22 +253,21 @@ class Coverage(_MatchableResource, _HydrateableResource):
 
         # Parse the parent, if it is present.
         if not (
-            isinstance(self.parent, Coverage) or
-            self.parent is None or
-            self.parent is UnhydratedField
+            isinstance(self.parent, Coverage)
+            or self.parent is None
+            or self.parent is UnhydratedField
         ):
             self.parent = Coverage(**self.parent)
 
         # If children are unhydrated or already parsed, don't attempt to parse
         if not (
-            self.children is UnhydratedField or
-            isinstance(self.children[0], Coverage)
+            self.children is UnhydratedField or isinstance(self.children[0], Coverage)
         ):
             self.children = [Coverage(**child) for child in self.children]
 
 
 @dataclass(eq=False)
-class Collection(_MatchableResource, _HydrateableResource):
+class Collection(_MatchableResource, _HydrateableResource, _TimestampedResource):
     # pylint: disable=too-many-instance-attributes
     # Required Fields
     name: str
@@ -273,13 +287,16 @@ class Collection(_MatchableResource, _HydrateableResource):
     thumb_src: Union[str, UnhydratedField] = UnhydratedField
     no_of_documents: Union[str, UnhydratedField] = UnhydratedField
     is_inactive: Union[str, UnhydratedField] = UnhydratedField
-    source_created_at: Union[str, UnhydratedField] = UnhydratedField
-    source_updated_at: Union[str, UnhydratedField] = UnhydratedField
-    first_published_at: Union[str, UnhydratedField] = UnhydratedField
+    source_created_at: Union[str, UnhydratedField, datetime] = UnhydratedField
+    source_updated_at: Union[str, UnhydratedField, datetime] = UnhydratedField
+    first_published_at: Union[str, UnhydratedField, datetime] = UnhydratedField
 
     # Internal Fields
     endpoint: str = "collection"
 
+    def __post_init__(self):
+        # Turn date fields from strings into datetimes.
+        self._process_timestamps()
 
 @dataclass(eq=False)
 class Repository(_MatchableResource, _HydrateableResource):
@@ -313,7 +330,7 @@ class Classification(_Resource):
 
 
 @dataclass(eq=False)
-class Document(_MatchableResource, _HydrateableResource):
+class Document(_MatchableResource, _HydrateableResource, _TimestampedResource):
 
     # pylint: disable=too-many-instance-attributes
 
@@ -333,7 +350,7 @@ class Document(_MatchableResource, _HydrateableResource):
     type: Union[Type, UnhydratedField] = UnhydratedField
     rights: Union[Right, UnhydratedField] = UnhydratedField
     pdf_generated_at: Union[str, UnhydratedField] = UnhydratedField
-    date_range_start: Union[str, UnhydratedField] = UnhydratedField
+    date_range_start: Union[str, date, UnhydratedField] = UnhydratedField
     sort_string_by_coverage: Union[str, UnhydratedField] = UnhydratedField
     main_src: Optional[
         Any
@@ -367,6 +384,21 @@ class Document(_MatchableResource, _HydrateableResource):
 
     def __post_init__(self):
         """Process lists of subordinate classes."""
+
+        # Parse related records
+        self._parse_child_records()
+
+        # Process DA timestamps.
+        self._process_timestamps()
+
+        # Process the date_range_start field to facilitate searches.
+        if isinstance(self.date_range_start, str):
+            year = int(self.date_range_start[:4])
+            month = int(self.date_range_start[4:6])
+            day = int(self.date_range_start[-2:])
+            self.date_range_start = date(year, month, day)
+
+    def _parse_child_records(self):
         child_fields = {
             "subjects": Subject,
             "transcripts": Transcript,

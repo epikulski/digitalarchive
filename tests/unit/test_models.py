@@ -2,6 +2,7 @@
 # pylint: disable = missing-docstring, no-self-use, too-few-public-methods
 
 import unittest.mock
+from datetime import date, datetime
 
 import pytest
 
@@ -26,12 +27,12 @@ class TestHydrateableResource:
             uri="test_uri",
             title="Test Title",
             description="Test Description",
-            doc_date="111111",
-            frontend_doc_date="111111",
+            doc_date="20100910",
+            frontend_doc_date="2019-10-26 16:12:00",
             slug="test slug",
-            source_updated_at="111111",
-            source_created_at="111111",
-            first_published_at="111111",
+            source_updated_at="2019-10-26 16:12:00",
+            source_created_at="2019-10-26 16:12:00",
+            first_published_at="2019-10-26 16:12:00",
         )
 
         # Prep mock rehydrated document
@@ -43,9 +44,9 @@ class TestHydrateableResource:
             "doc_date": "111111",
             "frontend_doc_date": "111111",
             "slug": "test slug",
-            "source_updated_at": "111111",
-            "source_created_at": "111111",
-            "first_published_at": "111111",
+            "source_updated_at": "2019-10-26 16:12:00",
+            "source_created_at": "2019-10-26 16:12:00",
+            "first_published_at": "2019-10-26 16:12:00",
             "source": "Test Source",
             "subjects": [],
             "transcripts": [],
@@ -59,7 +60,7 @@ class TestHydrateableResource:
             "contributors": [],
             "original_coverages": [],
             "repositories": [],
-            "classifications": []
+            "classifications": [],
         }
 
         mock_api.get.return_value = mock_hydrated_doc_json
@@ -79,6 +80,31 @@ class TestCollection:
         mock_matching.ResourceMatcher.assert_called_with(
             models.Collection, name="Soviet"
         )
+
+    def test_datetime_parsing(self):
+        # Create a mock collection.
+        collection = models.Collection(
+            id=1,
+            name="test",
+            slug="test",
+            source_created_at="2019-10-26 15:43:11",
+            source_updated_at="2019-10-26 15:43:11",
+            first_published_at="2019-10-26 15:43:11",
+        )
+
+        # Check that datetimes were properly generated.
+        assert isinstance(collection.source_updated_at, datetime)
+        assert isinstance(collection.source_created_at, datetime)
+        assert isinstance(collection.first_published_at, datetime)
+
+        # Check that datetimes are accurate.
+        expected_date = datetime(2019, 10, 26, 15, 43, 11)
+        for field in [
+            collection.source_created_at,
+            collection.source_updated_at,
+            collection.first_published_at,
+        ]:
+            assert field == expected_date
 
 
 class TestDocument:
@@ -100,9 +126,9 @@ class TestDocument:
             doc_date="test",
             frontend_doc_date="test",
             slug="test",
-            source_created_at="test",
-            source_updated_at="test",
-            first_published_at="test",
+            source_created_at="2019-10-26 16:12:00",
+            source_updated_at="2019-10-26 16:12:00",
+            first_published_at="2019-10-26 16:12:00",
         )
         unhydrated_doc = models.Document(
             id=1,
@@ -112,9 +138,9 @@ class TestDocument:
             doc_date="test",
             frontend_doc_date="test",
             slug="test",
-            source_created_at="test",
-            source_updated_at="test",
-            first_published_at="test",
+            source_created_at="2019-10-26 16:12:00",
+            source_updated_at="2019-10-26 16:12:00",
+            first_published_at="2019-10-26 16:12:00",
             pdf_generated_at="test_pdf_date",
         )
 
@@ -129,9 +155,9 @@ class TestDocument:
             doc_date="test",
             frontend_doc_date="test",
             slug="test",
-            source_created_at="test",
-            source_updated_at="test",
-            first_published_at="test",
+            source_created_at="2019-10-26 16:12:00",
+            source_updated_at="2019-10-26 16:12:00",
+            first_published_at="2019-10-26 16:12:00",
         )
         doc2 = models.Document(
             id="2",
@@ -141,9 +167,9 @@ class TestDocument:
             doc_date="test",
             frontend_doc_date="test",
             slug="test",
-            source_created_at="test",
-            source_updated_at="test",
-            first_published_at="test",
+            source_created_at="2019-10-26 16:12:00",
+            source_updated_at="2019-10-26 16:12:00",
+            first_published_at="2019-10-26 16:12:00",
         )
         assert doc1 != doc2
 
@@ -168,6 +194,25 @@ class TestDocument:
 
         # Confirm merged sets has no dupes.
         assert merged == {contributor_1, contributor_2, contributor_3}
+
+    def test_date_parsing(self):
+        """Check that Document.date_range_start is properly parsed."""
+        """Compare a search result doc and a hydrated doc."""
+        doc = models.Document(
+            id=1,
+            uri="test",
+            title="test",
+            description="test",
+            doc_date="test",
+            frontend_doc_date="test",
+            slug="test",
+            source_created_at="2019-10-26 16:12:00",
+            source_updated_at="2019-10-26 16:12:00",
+            first_published_at="2019-10-26 16:12:00",
+            date_range_start="20191026"
+        )
+
+        assert doc.date_range_start == date(2019, 10, 26)
 
 
 class TestAsset:
