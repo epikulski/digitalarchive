@@ -116,17 +116,17 @@ class TestResourceMatcher:
         # Set up mock response.
         results_page_1 = {
             "pagination": {"page": 1, "totalPages": 2, "totalItems": 2},
-            "list": [{"id": 1, "name": "test1"}],
+            "list": [{"id": 1, "name": "test1", "slug": "testslug"}],
         }
 
         results_page_2 = {
             "pagination": {"page": 2, "totalPages": 2, "totalItems": 2},
-            "list": [{"id": 2, "name": "test1"}],
+            "list": [{"id": 2, "name": "test2", "slug": "testslug"}],
         }
         mock_search.side_effect = [results_page_1, results_page_1, results_page_2]
 
         test_matcher = matching.ResourceMatcher(
-            models.Contributor, items_per_page=1, name="test_name"
+            models.Collection, items_per_page=1, name="test_name"
         )
         mock_search.reset_mock()
         mock_search.side_effect = [results_page_1, results_page_2]
@@ -137,7 +137,7 @@ class TestResourceMatcher:
         # Check result is as intended
         assert len(results) == 2
         for result in results:
-            assert isinstance(result, models.Contributor)
+            assert isinstance(result, models.Collection)
 
     @unittest.mock.patch("digitalarchive.matching.ResourceMatcher._record_by_id")
     def test_repr(self, mock_get_by_id):
