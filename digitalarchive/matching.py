@@ -45,9 +45,14 @@ class ResourceMatcher:
             self.query["itemsPerPage"] = items_per_page
             response = api.search(model=self.model.endpoint, params=self.query)
 
-            # Calculate pagination, with special handling for Subjects & Repositories, which don't conform.
-            if self.model in [models.Subject, models.Repository, models.Contributor]:
-                self.count = len(response['list'])
+            # Calculate pagination, with handling depending on model type.
+            if self.model in [
+                models.Subject,
+                models.Repository,
+                models.Contributor,
+                models.Coverage,
+            ]:
+                self.count = len(response["list"])
             else:
                 self.count = response["pagination"]["totalItems"]
 
@@ -57,7 +62,7 @@ class ResourceMatcher:
 
             # If model is subject, skip pagination as the endpoint doesn't do it.
             elif self.model is models.Subject:
-                self.list = (self.model(**item) for item in response['list'])
+                self.list = (self.model(**item) for item in response["list"])
 
             # Set up generator to serve remaining results.
             else:
