@@ -6,7 +6,7 @@ from __future__ import annotations
 # Standard Library
 import logging
 import copy
-from datetime import datetime
+from datetime import datetime, date
 from dataclasses import dataclass
 from typing import List, Any, Optional, Union
 
@@ -85,7 +85,7 @@ class _HydrateableResource(_Resource):
 
 class _TimestampedResource(_Resource):
 
-    def _process_dates(self):
+    def _process_timestamps(self):
         # Turn date fields from strings into datetimes.
         datetime_fields = [
             "source_created_at",
@@ -299,7 +299,7 @@ class Collection(_MatchableResource, _HydrateableResource, _TimestampedResource)
 
     def __post_init__(self):
         # Turn date fields from strings into datetimes.
-        self._process_dates()
+        self._process_timestamps()
 
 @dataclass(eq=False)
 class Repository(_MatchableResource, _HydrateableResource):
@@ -426,8 +426,17 @@ class Document(_MatchableResource, _HydrateableResource, _TimestampedResource):
                     ]
                     setattr(self, field, parsed_resources)
 
-        # Process DA dates.
-        self._process_dates()
+        # Process DA timestamps.
+        self._process_timestamps()
+
+        # todo: Write parsing logic for 'doc_date' and 'date_range_start'
+        # Process the date_range_start field to enable searches.
+        if isinstance(self.date_range_start, str):
+            year = int(self.date_range_start[:4])
+            month = int(self.date_range_start[4:6])
+            day = int(self.date_range_start[-2:])
+            self.date_range_start = date(year, month, day)
+
 
     @classmethod
     def match(cls, **kwargs) -> matching.ResourceMatcher:
