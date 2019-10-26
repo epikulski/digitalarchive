@@ -1,7 +1,4 @@
-"""ORM Models for DigitalArchive resource types.
-
-todo: figure out a better way to represent unhydrated fields than 'none'.
-"""
+"""ORM Models for DigitalArchive resource types."""
 # pylint: disable=missing-class-docstring
 
 from __future__ import annotations
