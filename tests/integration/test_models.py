@@ -82,7 +82,7 @@ class TestDocument:
 
     def test_date_range(self):
         results = digitalarchive.Document.match(start_date="19500101", end_date="19500101")
-
+        records = list(results.all())
         self.fail()
 
 class TestCollection:

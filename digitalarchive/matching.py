@@ -30,14 +30,16 @@ class ResourceMatcher:
         self.count: int
 
         # Prevent running date range searches against unsupported models.
-        for key in ["start_date", "end_date"]:
+        date_range_search_terms = ["start_date", "end_date"]
+        for key in date_range_search_terms:
             if key in kwargs.keys() and resource_model is not models.Document:
                 logging.error("[!] Date range searches supported only for digitalarchive.Document model.")
                 raise exceptions.InvalidSearchFieldError
 
         # Check that search keywords are valid for given model.
+        allowed_search_fields = [*date_range_search_terms, *self.model.__dataclass_fields__.keys()]
         for key in self.query:
-            if key not in self.model.__dataclass_fields__.keys():
+            if key not in allowed_search_fields:
                 raise exceptions.InvalidSearchFieldError
 
         # if this is a request for a single record by ID, return only the record

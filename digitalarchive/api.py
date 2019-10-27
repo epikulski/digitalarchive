@@ -61,7 +61,8 @@ def search(model: str, params: Optional[Dict] = None) -> dict:
 
         # Send query. Both collections and records use the records.json endpoint.
         logging.debug("[*] Querying %s API endpoint with params: %s", model, str(params))
-        url = f"https://digitalarchive.wilsoncenter.org/srv/record.json"
+        #todo: Should this be the /srv/record/search.json endpoint?
+        url = f"https://digitalarchive.wilsoncenter.org/srv/record/search.json"
         response = SESSION.get(url, params=params)
 
     # Handle non record or collection searches. These always match on "term".
