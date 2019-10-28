@@ -84,6 +84,7 @@ class _HydrateableResource(_Resource):
         self.__init__(**hydrated_fields)
 
 class _TimestampedResource(_Resource):
+    #pylint: disable=too-few-public-methods
 
     def _process_timestamps(self):
         # Turn date fields from strings into datetimes.
@@ -393,10 +394,7 @@ class Document(_MatchableResource, _HydrateableResource, _TimestampedResource):
 
         # Process the date_range_start field to facilitate searches.
         if isinstance(self.date_range_start, str):
-            year = int(self.date_range_start[:4])
-            month = int(self.date_range_start[4:6])
-            day = int(self.date_range_start[-2:])
-            self.date_range_start = date(year, month, day)
+            self.date_range_start = self._parse_date_range_start(self.date_range_start)
 
     def _parse_child_records(self):
         child_fields = {
@@ -437,6 +435,13 @@ class Document(_MatchableResource, _HydrateableResource, _TimestampedResource):
                         for resource in self.__getattribute__(field)
                     ]
                     setattr(self, field, parsed_resources)
+
+    @staticmethod
+    def _parse_date_range_start(doc_date: str) -> date:
+        year = int(doc_date[:4])
+        month = int(doc_date[4:6])
+        day = int(doc_date[-2:])
+        return date(year, month, day)
 
     @classmethod
     def match(cls, **kwargs) -> matching.ResourceMatcher:

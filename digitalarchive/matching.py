@@ -30,7 +30,16 @@ class ResourceMatcher:
         self.list: Generator[models._Resource, None, None]
         self.count: int
 
-        # Run logic to check and parse date searches.
+        # Handle open-ended date searches.
+        if "start_date" in self.query.keys() and "end_date" not in self.query.keys():
+            self.query["end_date"] = date.today()
+        elif "end_date" in self.query.keys() and "start_date" not in self.query.keys():
+            # Pull earliest record date from API.
+            da_date_range = api.get_date_range()
+            start_date = models.Document._parse_date_range_start(da_date_range["begin"])
+            self.query["start_date"] = start_date
+
+        # Check and parse date searches.
         date_range_search_terms = ["start_date", "end_date"]
         for term in date_range_search_terms:
             if term in self.query.keys():

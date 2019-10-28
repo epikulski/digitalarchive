@@ -61,7 +61,6 @@ def search(model: str, params: Optional[Dict] = None) -> dict:
 
         # Send query. Both collections and records use the records.json endpoint.
         logging.debug("[*] Querying %s API endpoint with params: %s", model, str(params))
-        #todo: Should this be the /srv/record/search.json endpoint?
         url = f"https://digitalarchive.wilsoncenter.org/srv/record.json"
         response = SESSION.get(url, params=params)
 
@@ -107,4 +106,10 @@ def get(endpoint: str, resource_id: str) -> dict:
         )
 
     # Return response body.
+    return response.json()
+
+
+def get_date_range() -> dict:
+    url = "https://digitalarchive.wilsoncenter.org/srv/record/date_range.json"
+    response = SESSION.get(url)
     return response.json()

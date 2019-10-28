@@ -109,6 +109,30 @@ class TestDocument:
             assert record.date_range_start >= date(1950, 1, 1)
             assert record.date_range_start <= date(1951, 1, 1)
 
+    def test_date_range_open_start(self):
+        """Test matching when only end_date is provided."""
+        end_date = date(1950, 1, 1)
+        all_docs = digitalarchive.Document.match(description="armenia")
+        date_docs = digitalarchive.Document.match(
+            end_date=end_date, description="armenia"
+        )
+
+        assert all_docs.count >= date_docs.count
+        for doc in date_docs.all():
+            assert doc.date_range_start <= end_date
+
+    def test_date_range_open_end(self):
+        """Test matching when only start_date is provided."""
+        start_date = date(1950, 1, 1)
+        all_docs = digitalarchive.Document.match(description="armenia")
+        date_docs = digitalarchive.Document.match(
+            description="armenia", start_date=start_date
+        )
+
+        assert all_docs.count >= date_docs.count
+        for doc in date_docs.all():
+            assert doc.date_range_start >= start_date
+
 
 class TestCollection:
     def test_match_by_keyword(self):
