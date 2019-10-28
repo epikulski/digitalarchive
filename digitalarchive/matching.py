@@ -4,6 +4,7 @@
 from __future__ import annotations
 import logging
 from typing import Generator
+from datetime import date
 
 # Application modules
 import digitalarchive.api as api
@@ -29,15 +30,17 @@ class ResourceMatcher:
         self.list: Generator[models._Resource, None, None]
         self.count: int
 
-        # Prevent running date range searches against unsupported models.
+        # Run logic to check and parse date searches.
         date_range_search_terms = ["start_date", "end_date"]
-        for key in date_range_search_terms:
-            if key in kwargs.keys() and resource_model is not models.Document:
-                logging.error("[!] Date range searches supported only for digitalarchive.Document model.")
-                raise exceptions.InvalidSearchFieldError
+        for term in date_range_search_terms:
+            if term in self.query.keys():
+                self._process_date_searches(term)
 
         # Check that search keywords are valid for given model.
-        allowed_search_fields = [*date_range_search_terms, *self.model.__dataclass_fields__.keys()]
+        allowed_search_fields = [
+            *date_range_search_terms,
+            *self.model.__dataclass_fields__.keys(),
+        ]
         for key in self.query:
             if key not in allowed_search_fields:
                 raise exceptions.InvalidSearchFieldError
@@ -102,6 +105,40 @@ class ResourceMatcher:
 
             # Fetch new resources if needed.
             page += 1
+
+    def _process_date_searches(self, field):
+        """Run formatting and type checks against  date search fields."""
+        search_date = self.query[field]
+
+        # Restrict date searches to digitalarchive.models.Document
+        if field in self.query.keys() and self.model is not models.Document:
+            logging.error(
+                "[!] Date range searches supported only for digitalarchive.Document model."
+            )
+            raise exceptions.InvalidSearchFieldError
+
+        # Transform datetime objects into formatted string and return
+        if isinstance(search_date, date):
+            self.query[
+                field
+            ] = f"{search_date.year}{search_date.strftime('%m')}{search_date.strftime('%d')}"
+            return
+
+        # Check string length and return if OK.
+        elif isinstance(search_date, str) and len(search_date) == 8:
+            return
+
+        # If passed a string but its wrong length, raise.
+        elif isinstance(search_date, str) and len(search_date) != 8:
+            logging.error("[!] Invalid date string! Format is: YYYYMMDD")
+            raise exceptions.MalformedDateSearch
+
+        # If something else passed as keyword, bail out.
+        else:
+            logging.error(
+                "[!] Bad date format passed as search term. Dates must be type str or datetime.date"
+            )
+            raise exceptions.MalformedDateSearch
 
     def first(self) -> models._MatchableResource:
         """Return only the first record from a SearchResult."""

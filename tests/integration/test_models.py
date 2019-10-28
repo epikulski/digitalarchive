@@ -1,6 +1,9 @@
 """Test retrieving and parsing model from production DA API."""
 # pylint: disable=missing-class-docstring,missing-function-docstring,no-self-use, too-few-public-methods
 
+# Standard Library
+from datetime import date
+
 # Application Modules
 import digitalarchive
 
@@ -80,10 +83,32 @@ class TestDocument:
         results.hydrate()
         results = results.all()
 
-    def test_date_range(self):
-        results = digitalarchive.Document.match(start_date="19500101", end_date="19500101")
+    def test_date_range_str(self):
+        results = digitalarchive.Document.match(
+            start_date="19500101", end_date="19510101"
+        )
         records = list(results.all())
-        self.fail()
+
+        # check records fall within requested dates.
+        assert len(records) != 0
+        for record in records:
+            assert record.date_range_start >= date(1950, 1, 1)
+            assert record.date_range_start <= date(1951, 1, 1)
+
+    def test_date_range_obj(self):
+        start_date = date(1950, 1, 1)
+        end_date = date(1950, 1, 1)
+        results = digitalarchive.Document.match(
+            start_date=start_date, end_date=end_date
+        )
+        records = list(results.all())
+
+        # check records fall within requested dates.
+        assert len(records) != 0
+        for record in records:
+            assert record.date_range_start >= date(1950, 1, 1)
+            assert record.date_range_start <= date(1951, 1, 1)
+
 
 class TestCollection:
     def test_match_by_keyword(self):
