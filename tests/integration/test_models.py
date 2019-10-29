@@ -137,52 +137,54 @@ class TestDocument:
 
     def test_search_by_collection(self):
         """Search for documents within a given collection"""
-        collection = digitalarchive.Collection(
+        collection1 = digitalarchive.Collection(
             id="228", name="Purges in 1950s China", slug="purges-in-1950s-china"
         )
-        docs = digitalarchive.Document.match(collection=collection)
+        archive.Document.match(collections=[collection])
 
         self.fail()
 
     def test_search_by_publisher(self):
         """Search for documents by a Publisher"""
-        docs = digitalarchive.Document.match(publisher=publisher)
+        docs = digitalarchive.Document.match(publishers=[publisher])
         self.fail()
 
     def test_search_by_repository(self):
         """Search for documents by a Repository"""
-        docs = digitalarchive.Document.match(repository=repository)
+        docs = digitalarchive.Document.match(repositories=[repository])
         self.fail()
 
     def test_search_by_coverage(self):
         """Search for a document by a Coverage"""
-        docs = digitalarchive.Document.match(coverage=coverage)
+        docs = digitalarchive.Document.match(coverages=[coverage])
         self.fail()
 
     def test_search_by_subject(self):
         """Search for a document by Subject"""
-        docs = digitalarchive.Document.match(subject=subject)
+        docs = digitalarchive.Document.match(subjects=[subject])
         self.fail()
 
     def test_search_by_contributor(self):
         """Search for a document by Contributor"""
-        docs = digitalarchive.Document.match(contributor=contributor)
+        docs = digitalarchive.Document.match(contributors=[contributor])
         self.fail()
 
     def test_search_by_donor(self):
-        docs = digitalarchive.Document.match(donor=donor)
+        donor1 = digitalarchive.models.Donor(id=12, name="MacArthur")
+        donor2 = digitalarchive.models.Donor(id=20, name="Carnegie")
+        docs = digitalarchive.Document.match(donors=[donor1, donor2])
         self.fail()
 
     def test_search_by_language(self):
-        docs = digitalarchive.Document.match(language=language)
+        docs = digitalarchive.Document.match(languages=language)
         self.fail()
 
     def test_search_by_translation(self):
-        docs = digitalarchive.Document.match(translation=translation)
+        docs = digitalarchive.Document.match(translations=translation)
         self.fail()
 
     def test_search_by_theme(self):
-        docs = digitalarchive.Document.match(theme=theme)
+        docs = digitalarchive.Document.match(themes=theme)
         self.fail()
 
 

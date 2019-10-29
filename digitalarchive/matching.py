@@ -30,6 +30,9 @@ class ResourceMatcher:
         self.list: Generator[models._Resource, None, None]
         self.count: int
 
+        # Extract id from searches that are models.
+        self._process_related_model_searches()
+
         # Check and parse date searches.
         date_range_searches = ["start_date", "end_date"]
         for field in date_range_searches:
@@ -38,10 +41,11 @@ class ResourceMatcher:
                 break
 
         # Check that search keywords are valid for given model.
-        allowed_search_fields = [
-            *date_range_searches,
-            *self.model.__dataclass_fields__.keys(),
-        ]
+        allowed_search_fields = [*self.model.__dataclass_fields__.keys()]
+
+        if self.model is models.Document:
+            allowed_search_fields.extend(date_range_searches)
+
         for key in self.query:
             if key not in allowed_search_fields:
                 raise exceptions.InvalidSearchFieldError
@@ -83,6 +87,38 @@ class ResourceMatcher:
 
     def __repr__(self):
         return f"ResourceMatcher(model={self.model}, query={self.query}, count={self.count})"
+
+    def _process_related_model_searches(self):
+        """
+        Process and format searches by related models.
+
+        We have to re-name the fields from plural to singluar to match the DA format.
+        :return:
+        """
+        multi_terms = {
+            "collections": "collection",
+            "publishers": "publisher",
+            "repositories": "repository",
+            "coverages": "coverage",
+            "subjects": "subject",
+            "contributors": "contributor",
+            "donors": "donor",
+        }
+
+        singular_terms = [
+            "language", "translation", "theme"
+        ]
+
+        # # Remove fields we don't need to parse
+        # multi_terms = [term for term in multi_terms.items() if term in self.query.keys()]
+        # terms.extend([term for term in singular_terms if term in self.query.keys()])
+
+        # Pull out IDs from each term
+        # for key, value in multi_terms:
+        #     self.query[key] = [str(item.id) for item in self.query[key]]
+
+        # Rename each term to singular
+
 
     def _record_by_id(self) -> dict:
         """Get a single record by ID."""
