@@ -135,6 +135,56 @@ class TestDocument:
         for doc in date_docs.all():
             assert doc.date_range_start >= start_date
 
+    def test_search_by_collection(self):
+        """Search for documents within a given collection"""
+        collection = digitalarchive.Collection(
+            id="228", name="Purges in 1950s China", slug="purges-in-1950s-china"
+        )
+        docs = digitalarchive.Document.match(collection=collection)
+
+        self.fail()
+
+    def test_search_by_publisher(self):
+        """Search for documents by a Publisher"""
+        docs = digitalarchive.Document.match(publisher=publisher)
+        self.fail()
+
+    def test_search_by_repository(self):
+        """Search for documents by a Repository"""
+        docs = digitalarchive.Document.match(repository=repository)
+        self.fail()
+
+    def test_search_by_coverage(self):
+        """Search for a document by a Coverage"""
+        docs = digitalarchive.Document.match(coverage=coverage)
+        self.fail()
+
+    def test_search_by_subject(self):
+        """Search for a document by Subject"""
+        docs = digitalarchive.Document.match(subject=subject)
+        self.fail()
+
+    def test_search_by_contributor(self):
+        """Search for a document by Contributor"""
+        docs = digitalarchive.Document.match(contributor=contributor)
+        self.fail()
+
+    def test_search_by_donor(self):
+        docs = digitalarchive.Document.match(donor=donor)
+        self.fail()
+
+    def test_search_by_language(self):
+        docs = digitalarchive.Document.match(language=language)
+        self.fail()
+
+    def test_search_by_translation(self):
+        docs = digitalarchive.Document.match(translation=translation)
+        self.fail()
+
+    def test_search_by_theme(self):
+        docs = digitalarchive.Document.match(theme=theme)
+        self.fail()
+
 
 class TestCollection:
     def test_match_by_keyword(self):
