@@ -453,10 +453,11 @@ class Document(_MatchableResource, _HydrateableResource, _TimestampedResource):
         kwargs["model"] = "Record"
         return matching.ResourceMatcher(cls, **kwargs)
 
-    def hydrate(self):
+    def hydrate(self, recurse: bool = False):
         """
         Hydrates document and subordinate assets.
 
+        :param recurse: If true, also hydrate subordinate records.
         todo: See if i can implement the hydration and merge steps using super from _HydrateableResource
         todo: Make recursive hydration an optional parameter.
         """
@@ -476,7 +477,8 @@ class Document(_MatchableResource, _HydrateableResource, _TimestampedResource):
         self.__init__(**hydrated_fields)
 
         # Hydrate Assets
-        [transcript.hydrate() for transcript in self.transcripts]
-        [translation.hydrate() for translation in self.translations]
-        [media_file.hydrate() for media_file in self.media_files]
-        [collection.hydrate() for collection in self.collections]
+        if recurse is True:
+            [transcript.hydrate() for transcript in self.transcripts]
+            [translation.hydrate() for translation in self.translations]
+            [media_file.hydrate() for media_file in self.media_files]
+            [collection.hydrate() for collection in self.collections]
