@@ -78,6 +78,15 @@ class TestDocument:
         for transcript in record.transcripts:
             assert isinstance(transcript, digitalarchive.models.Transcript)
 
+    def test_hydrate_recursive(self):
+        record: digitalarchive.Document = digitalarchive.Document.match(id="121894").first()
+        record.hydrate(recurse=True)
+
+        # Make sure fields of a subordinate record were hydrated.
+        for translation in record.translations:
+            for key in translation.__dataclass_fields__.keys():
+                assert getattr(translation, key) is not digitalarchive.models.UnhydratedField
+
     def test_hydrate_resultset(self):
         results = digitalarchive.Document.match(description="soviet eurasia")
         results.hydrate()
