@@ -30,24 +30,16 @@ class ResourceMatcher:
         self.list: Generator[models._Resource, None, None]
         self.count: int
 
-        # Handle open-ended date searches.
-        if "start_date" in self.query.keys() and "end_date" not in self.query.keys():
-            self.query["end_date"] = date.today()
-        elif "end_date" in self.query.keys() and "start_date" not in self.query.keys():
-            # Pull earliest record date from API.
-            da_date_range = api.get_date_range()
-            start_date = models.Document._parse_date_range_start(da_date_range["begin"])
-            self.query["start_date"] = start_date
-
         # Check and parse date searches.
-        date_range_search_terms = ["start_date", "end_date"]
-        for term in date_range_search_terms:
-            if term in self.query.keys():
-                self._process_date_searches(term)
+        date_range_searches = ["start_date", "end_date"]
+        for field in date_range_searches:
+            if field in self.query.keys():
+                self._process_date_searches()
+                break
 
         # Check that search keywords are valid for given model.
         allowed_search_fields = [
-            *date_range_search_terms,
+            *date_range_searches,
             *self.model.__dataclass_fields__.keys(),
         ]
         for key in self.query:
@@ -115,39 +107,47 @@ class ResourceMatcher:
             # Fetch new resources if needed.
             page += 1
 
-    def _process_date_searches(self, field):
+    def _process_date_searches(self):
         """Run formatting and type checks against  date search fields."""
-        search_date = self.query[field]
+        date_search_terms = ["start_date", "end_date"]
 
         # Restrict date searches to digitalarchive.models.Document
-        if field in self.query.keys() and self.model is not models.Document:
+        if self.model is not models.Document:
             logging.error(
                 "[!] Date range searches supported only for digitalarchive.Document model."
             )
             raise exceptions.InvalidSearchFieldError
 
+        # Handle open-ended date searches.
+        if "start_date" in self.query.keys() and "end_date" not in self.query.keys():
+            self.query["end_date"] = date.today()
+        elif "end_date" in self.query.keys() and "start_date" not in self.query.keys():
+            # Pull earliest record date from API.
+            da_date_range = api.get_date_range()
+            start_date = models.Document._parse_date_range_start(da_date_range["begin"])
+            self.query["start_date"] = start_date
+
         # Transform datetime objects into formatted string and return
-        if isinstance(search_date, date):
-            self.query[
-                field
-            ] = f"{search_date.year}{search_date.strftime('%m')}{search_date.strftime('%d')}"
-            return
+        for field in date_search_terms:
+            search_date = self.query[field]
+            if isinstance(search_date, date):
+                self.query[
+                    field
+                ] = f"{search_date.year}{search_date.strftime('%m')}{search_date.strftime('%d')}"
 
-        # Check string length and return if OK.
-        elif isinstance(search_date, str) and len(search_date) == 8:
-            return
+            # Check string length and return if OK.
+            elif isinstance(search_date, str) and len(search_date) == 8:
+                pass
 
-        # If passed a string but its wrong length, raise.
-        elif isinstance(search_date, str) and len(search_date) != 8:
-            logging.error("[!] Invalid date string! Format is: YYYYMMDD")
-            raise exceptions.MalformedDateSearch
+            # If passed a string but its wrong length, raise.
+            elif isinstance(search_date, str) and len(search_date) != 8:
+                logging.error("[!] Invalid date string! Format is: YYYYMMDD")
+                raise exceptions.MalformedDateSearch
 
-        # If something else passed as keyword, bail out.
-        else:
-            logging.error(
-                "[!] Bad date format passed as search term. Dates must be type str or datetime.date"
-            )
-            raise exceptions.MalformedDateSearch
+            # If something else passed as keyword, bail out.
+            else:
+                logging.error("[!] Dates must be type str or datetime.date")
+                raise exceptions.MalformedDateSearch
 
     def first(self) -> models._MatchableResource:
         """Return only the first record from a SearchResult."""

@@ -117,6 +117,7 @@ class TestDocument:
             end_date=end_date, description="armenia"
         )
 
+        assert date_docs.count != 0
         assert all_docs.count >= date_docs.count
         for doc in date_docs.all():
             assert doc.date_range_start <= end_date
@@ -129,6 +130,7 @@ class TestDocument:
             description="armenia", start_date=start_date
         )
 
+        assert date_docs.count != 0
         assert all_docs.count >= date_docs.count
         for doc in date_docs.all():
             assert doc.date_range_start >= start_date

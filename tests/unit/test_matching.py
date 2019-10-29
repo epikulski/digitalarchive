@@ -155,7 +155,7 @@ class TestResourceMatcher:
         """Create a test object with a date and confirm formatting."""
         test_match = matching.ResourceMatcher(models.Document, id=1)
         test_match.query["start_date"] = date(1950, 1, 1)
-        test_match._process_date_searches("start_date")
+        test_match._process_date_searches()
         assert test_match.query["start_date"] == "19500101"
 
     @unittest.mock.patch("digitalarchive.matching.api")
@@ -163,7 +163,7 @@ class TestResourceMatcher:
         """Pass a unsupported type to date search, confirm error raised """
         test_match = matching.ResourceMatcher(models.Document, id=1)
         test_match.query["start_date"] = "19500101"
-        test_match._process_date_searches("start_date")
+        test_match._process_date_searches()
         assert test_match.query["start_date"] == "19500101"
 
     @unittest.mock.patch("digitalarchive.matching.api")
@@ -171,14 +171,14 @@ class TestResourceMatcher:
         test_match = matching.ResourceMatcher(models.Subject, id=1)
         test_match.query["start_date"] = "19500101"
         with pytest.raises(exceptions.InvalidSearchFieldError):
-            test_match._process_date_searches("start_date")
+            test_match._process_date_searches()
 
     @unittest.mock.patch("digitalarchive.matching.api")
     def test_process_date_searches_invalid_len(self, mock_api):
         test_match = matching.ResourceMatcher(models.Document, id=1)
         test_match.query["start_date"] = "195001"
         with pytest.raises(exceptions.MalformedDateSearch):
-            test_match._process_date_searches("start_date")
+            test_match._process_date_searches()
 
     @unittest.mock.patch("digitalarchive.matching.api")
     def test_process_date_searches_invalid_type(self, mock_api):
@@ -186,4 +186,4 @@ class TestResourceMatcher:
         test_match = matching.ResourceMatcher(models.Document, id=1)
         test_match.query["start_date"] = 1.1
         with pytest.raises(exceptions.MalformedDateSearch):
-            test_match._process_date_searches("start_date")
+            test_match._process_date_searches()
