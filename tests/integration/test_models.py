@@ -1,6 +1,9 @@
 """Test retrieving and parsing model from production DA API."""
 # pylint: disable=missing-class-docstring,missing-function-docstring,no-self-use, too-few-public-methods
 
+# Standard Library
+from datetime import date
+
 # Application Modules
 import digitalarchive
 
@@ -79,6 +82,58 @@ class TestDocument:
         results = digitalarchive.Document.match(description="soviet eurasia")
         results.hydrate()
         results = results.all()
+
+    def test_date_range_str(self):
+        results = digitalarchive.Document.match(
+            start_date="19500101", end_date="19510101"
+        )
+        records = list(results.all())
+
+        # check records fall within requested dates.
+        assert len(records) != 0
+        for record in records:
+            assert record.date_range_start >= date(1950, 1, 1)
+            assert record.date_range_start <= date(1951, 1, 1)
+
+    def test_date_range_obj(self):
+        start_date = date(1950, 1, 1)
+        end_date = date(1950, 1, 1)
+        results = digitalarchive.Document.match(
+            start_date=start_date, end_date=end_date
+        )
+        records = list(results.all())
+
+        # check records fall within requested dates.
+        assert len(records) != 0
+        for record in records:
+            assert record.date_range_start >= date(1950, 1, 1)
+            assert record.date_range_start <= date(1951, 1, 1)
+
+    def test_date_range_open_start(self):
+        """Test matching when only end_date is provided."""
+        end_date = date(1950, 1, 1)
+        all_docs = digitalarchive.Document.match(description="armenia")
+        date_docs = digitalarchive.Document.match(
+            end_date=end_date, description="armenia"
+        )
+
+        assert date_docs.count != 0
+        assert all_docs.count >= date_docs.count
+        for doc in date_docs.all():
+            assert doc.date_range_start <= end_date
+
+    def test_date_range_open_end(self):
+        """Test matching when only start_date is provided."""
+        start_date = date(1950, 1, 1)
+        all_docs = digitalarchive.Document.match(description="armenia")
+        date_docs = digitalarchive.Document.match(
+            description="armenia", start_date=start_date
+        )
+
+        assert date_docs.count != 0
+        assert all_docs.count >= date_docs.count
+        for doc in date_docs.all():
+            assert doc.date_range_start >= start_date
 
 
 class TestCollection:

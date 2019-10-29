@@ -107,3 +107,9 @@ def get(endpoint: str, resource_id: str) -> dict:
 
     # Return response body.
     return response.json()
+
+
+def get_date_range() -> dict:
+    url = "https://digitalarchive.wilsoncenter.org/srv/record/date_range.json"
+    response = SESSION.get(url)
+    return response.json()
