@@ -27,20 +27,6 @@ def search(model: str, params: Optional[Dict] = None) -> dict:
     if params is None:
         params = {}
 
-    # Special handling for parameters that are subclasses of Resource.
-    # We sub in the ID# instead of the whole dataclass.
-    for field in [
-        "collection",
-        "publisher",
-        "repository",
-        "coverage",
-        "subject",
-        "contributor",
-        "donor",
-    ]:
-        if params.get(field) is not None:
-            params[field] = params.get(field).id
-
     # Handle record searches. We transform some of the parameters.
     if model == "record":
         # concatenate all of the keyword fields into the 'q' param

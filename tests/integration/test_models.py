@@ -170,9 +170,15 @@ class TestDocument:
         self.fail()
 
     def test_search_by_donor(self):
-        donor1 = digitalarchive.models.Donor(id=12, name="MacArthur")
-        donor2 = digitalarchive.models.Donor(id=20, name="Carnegie")
+        donor1 = digitalarchive.models.Donor(id="12", name="MacArthur")
+        donor2 = digitalarchive.models.Donor(id="20", name="Carnegie")
         docs = digitalarchive.Document.match(donors=[donor1, donor2])
+
+        for doc in docs.all():
+            doc.hydrate()
+            assert donor1 in doc.donors
+            assert donor2 in doc.donors
+
         self.fail()
 
     def test_search_by_language(self):
