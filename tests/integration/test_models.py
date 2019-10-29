@@ -2,10 +2,14 @@
 # pylint: disable=missing-class-docstring,missing-function-docstring,no-self-use, too-few-public-methods
 
 # Standard Library
+import logging
 from datetime import date
 
 # Application Modules
 import digitalarchive
+
+# Set up logger
+logging.basicConfig(level=logging.DEBUG)
 
 
 class TestDocument:
@@ -170,16 +174,17 @@ class TestDocument:
         self.fail()
 
     def test_search_by_donor(self):
-        donor1 = digitalarchive.models.Donor(id="12", name="MacArthur")
+        donor1 = digitalarchive.models.Donor(id="13", name="Blavatnik")
         donor2 = digitalarchive.models.Donor(id="20", name="Carnegie")
-        docs = digitalarchive.Document.match(donors=[donor1, donor2])
+        docs = digitalarchive.Document.match(description="burma", donors=[donor1, donor2])
 
+        # Check all docs match at least one of the searched for collections
         for doc in docs.all():
             doc.hydrate()
-            assert donor1 in doc.donors
-            assert donor2 in doc.donors
-
-        self.fail()
+            assert (
+                donor1 in doc.donors or
+                donor2 in doc.donors
+            )
 
     def test_search_by_language(self):
         docs = digitalarchive.Document.match(languages=language)
