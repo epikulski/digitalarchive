@@ -8,7 +8,6 @@ from datetime import date
 import digitalarchive
 
 
-
 class TestDocument:
     def test_match_by_id(self):
         # Fetch a document
@@ -80,13 +79,18 @@ class TestDocument:
             assert isinstance(transcript, digitalarchive.models.Transcript)
 
     def test_hydrate_recursive(self):
-        record: digitalarchive.Document = digitalarchive.Document.match(id="121894").first()
+        record: digitalarchive.Document = digitalarchive.Document.match(
+            id="121894"
+        ).first()
         record.hydrate(recurse=True)
 
         # Make sure fields of a subordinate record were hydrated.
         for translation in record.translations:
             for key in translation.__dataclass_fields__.keys():
-                assert getattr(translation, key) is not digitalarchive.models.UnhydratedField
+                assert (
+                    getattr(translation, key)
+                    is not digitalarchive.models.UnhydratedField
+                )
 
     def test_hydrate_resultset(self):
         results = digitalarchive.Document.match(description="soviet eurasia")
@@ -106,11 +110,17 @@ class TestDocument:
         for result in results:
             for translation in result.translations:
                 for key in translation.__dataclass_fields__.keys():
-                    assert getattr(translation, key) is not digitalarchive.models.UnhydratedField
+                    assert (
+                        getattr(translation, key)
+                        is not digitalarchive.models.UnhydratedField
+                    )
 
             for transcript in result.transcripts:
                 for key in transcript.__dataclass_fields__.keys():
-                    assert getattr(transcript, key) is not digitalarchive.models.UnhydratedField
+                    assert (
+                        getattr(transcript, key)
+                        is not digitalarchive.models.UnhydratedField
+                    )
 
     def test_date_range_str(self):
         results = digitalarchive.Document.match(
@@ -166,16 +176,17 @@ class TestDocument:
 
     def test_search_by_collection(self):
         """Search for documents within a given collection"""
-        collection_1 = digitalarchive.models.Collection(id="273", name="Chinese Nuclear Testing", slug="test")
-        collection_2 = digitalarchive.models.Collection(id="105", name="Chinese Nuclear History", slug="test")
+        collection_1 = digitalarchive.models.Collection(
+            id="273", name="Chinese Nuclear Testing", slug="test"
+        )
+        collection_2 = digitalarchive.models.Collection(
+            id="105", name="Chinese Nuclear History", slug="test"
+        )
         docs = digitalarchive.Document.match(collections=[collection_1, collection_2])
         docs.hydrate()
         assert docs.count != 0
         for doc in docs.all():
-            assert(
-                collection_1 in doc.collections and
-                collection_2 in doc.collections
-            )
+            assert collection_1 in doc.collections and collection_2 in doc.collections
 
     def test_search_by_publisher(self):
         """Search for documents by a Publisher"""
@@ -203,7 +214,9 @@ class TestDocument:
 
     def test_search_by_subject(self):
         """Search for a document by Subject"""
-        subject = digitalarchive.Subject(id="2229", name="China--History--Tiananmen Square Incident, 1989")
+        subject = digitalarchive.Subject(
+            id="2229", name="China--History--Tiananmen Square Incident, 1989"
+        )
         docs = digitalarchive.Document.match(subjects=[subject])
         docs.hydrate()
 
@@ -218,10 +231,7 @@ class TestDocument:
         docs = digitalarchive.Document.match(contributors=[contributor1, contributor2])
         docs.hydrate()
         for doc in docs.all():
-            assert (
-                contributor1 in doc.contributors and
-                contributor2 in doc.contributors
-            )
+            assert contributor1 in doc.contributors and contributor2 in doc.contributors
 
     def test_search_by_donor(self):
         donor1 = digitalarchive.models.Donor(id="12", name="MacArthur")
@@ -231,10 +241,7 @@ class TestDocument:
         # Check all docs match at least one of the searched for collections
         for doc in docs.all():
             doc.hydrate()
-            assert (
-                donor1 in doc.donors and
-                donor2 in doc.donors
-            )
+            assert donor1 in doc.donors and donor2 in doc.donors
 
     def test_search_by_language(self):
         language = digitalarchive.models.Language(id="mon")
@@ -250,12 +257,16 @@ class TestDocument:
         docs.hydrate(recurse=True)
         assert docs.count != 0
         for doc in docs.all():
-            translation_lang_ids = [translation.language.id for translation in doc.translations]
+            translation_lang_ids = [
+                translation.language.id for translation in doc.translations
+            ]
             assert language.id in translation_lang_ids
 
     def test_search_by_theme(self):
-        docs = digitalarchive.Document.match(themes=theme)
-        self.fail()
+        theme = digitalarchive.models.Theme(id="8")
+        theme_docs = digitalarchive.Document.match(themes=[theme])
+        all_docs = digitalarchive.Document.match()
+        assert theme_docs.count < all_docs.count
 
 
 class TestCollection:

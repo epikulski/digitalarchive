@@ -30,8 +30,6 @@ class ResourceMatcher:
         self.list: Generator[models._Resource, None, None]
         self.count: int
 
-
-
         # Check and parse date searches.
         date_range_searches = ["start_date", "end_date"]
         for field in date_range_searches:
@@ -44,6 +42,7 @@ class ResourceMatcher:
 
         if self.model is models.Document:
             allowed_search_fields.extend(date_range_searches)
+            allowed_search_fields.append("themes")
 
         for key in self.query:
             if key not in allowed_search_fields:
@@ -106,12 +105,9 @@ class ResourceMatcher:
             "contributors": "contributor",
             "donors": "donor",
             "languages": "language",
-            "translations": "translation"
+            "translations": "translation",
+            "themes": "theme",
         }
-
-        singular_terms = [
-              "theme"
-        ]
 
         # Rename each term to singular
         for key, value in multi_terms.items():
@@ -120,7 +116,7 @@ class ResourceMatcher:
 
         # Build list of terms we need to parse
         terms_to_parse = []
-        for term in [*singular_terms, *multi_terms.values()]:
+        for term in multi_terms.values():
             if term in self.query.keys():
                 terms_to_parse.append(term)
 
@@ -138,8 +134,6 @@ class ResourceMatcher:
                 # Pull out the singleton.
                 self.query[term] = self.query[term][0]
 
-
-
         print("break")
 
         # # Remove fields we don't need to parse
@@ -149,8 +143,6 @@ class ResourceMatcher:
         # Pull out IDs from each term
         # for key, value in multi_terms:
         #     self.query[key] = [str(item.id) for item in self.query[key]]
-
-
 
     def _record_by_id(self) -> dict:
         """Get a single record by ID."""
@@ -229,7 +221,6 @@ class ResourceMatcher:
         """Hydrate all of the Resources in a resultset."""
         # Fetch all the records.
         self.list = list(self.list)
-
 
         # Hydrate all the records.
         for resource in self.list:

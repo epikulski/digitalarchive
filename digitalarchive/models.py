@@ -415,7 +415,7 @@ class Document(_MatchableResource, _HydrateableResource, _TimestampedResource):
             "original_coverages": Coverage,
             "repositories": Repository,
             "classifications": Classification,
-            "donors": Donor
+            "donors": Donor,
         }
 
         # If we are dealing with an unhydrated record, don't attempt to process child records.
@@ -485,3 +485,13 @@ class Document(_MatchableResource, _HydrateableResource, _TimestampedResource):
             [translation.hydrate() for translation in self.translations]
             [media_file.hydrate() for media_file in self.media_files]
             [collection.hydrate() for collection in self.collections]
+
+
+class Theme(_Resource):
+    """These never appear on any record model, but can be passed as a search param to Document."""
+
+    title: str = None
+    value: Optional[str] = None
+    description: Optional[str] = None
+    main_src: Optional[str] = None
+    slug: Optional[str] = None
