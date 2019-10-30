@@ -263,7 +263,7 @@ class TestDocument:
             assert language.id in translation_lang_ids
 
     def test_search_by_theme(self):
-        theme = digitalarchive.models.Theme(id="8")
+        theme = digitalarchive.models.Theme(id="8", slug="emir-farid-chehab")
         theme_docs = digitalarchive.Document.match(themes=[theme])
         all_docs = digitalarchive.Document.match()
         assert theme_docs.count < all_docs.count
@@ -527,3 +527,12 @@ class TestCoverage:
         for coverage in coverage:
             assert coverage.parent is not digitalarchive.models.UnhydratedField
             assert coverage.children is not digitalarchive.models.UnhydratedField
+
+class TestTheme:
+
+    def test_hydrate(self):
+        theme = digitalarchive.models.Theme(id="1", slug="cold-war-history")
+        theme.hydrate()
+        assert theme.title == "Cold War History"
+        assert theme.slug == "cold-war-history"
+
