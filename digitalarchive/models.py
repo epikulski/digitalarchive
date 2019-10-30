@@ -415,6 +415,7 @@ class Document(_MatchableResource, _HydrateableResource, _TimestampedResource):
             "original_coverages": Coverage,
             "repositories": Repository,
             "classifications": Classification,
+            "donors": Donor
         }
 
         # If we are dealing with an unhydrated record, don't attempt to process child records.
