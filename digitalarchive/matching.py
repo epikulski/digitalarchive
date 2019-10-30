@@ -105,10 +105,11 @@ class ResourceMatcher:
             "subjects": "subject",
             "contributors": "contributor",
             "donors": "donor",
+            "languages": "language"
         }
 
         singular_terms = [
-            "language", "translation", "theme"
+             "translation", "theme"
         ]
 
         # Rename each term to singular
@@ -125,6 +126,18 @@ class ResourceMatcher:
         # transform each term list into a list of IDs
         for term in terms_to_parse:
             self.query[term] = [str(item.id) for item in self.query[term]]
+
+        # Special handling for langauges, translations, themes, special.
+        # Unlike they above, they only accept singular values
+        for term in ["language", "translation", "theme"]:
+            if term in self.query.keys():
+                if len(self.query[term]) > 1:
+                    logging.error(f"[!] Cannot filter for more than one {term}")
+                    raise exceptions.InvalidSearchFieldError
+                # Pull out the singleton.
+                self.query[term] = self.query[term][0]
+
+
 
         print("break")
 

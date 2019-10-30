@@ -201,11 +201,15 @@ class TestDocument:
         for doc in docs.all():
             assert cov in doc.original_coverages
 
-
     def test_search_by_subject(self):
         """Search for a document by Subject"""
-        self.fail()
+        subject = digitalarchive.Subject(id="2229", name="China--History--Tiananmen Square Incident, 1989")
+        docs = digitalarchive.Document.match(subjects=[subject])
+        docs.hydrate()
 
+        assert docs.count != 0
+        for doc in docs.all():
+            assert subject in doc.subjects
 
     def test_search_by_contributor(self):
         """Search for a document by Contributor"""
@@ -233,8 +237,12 @@ class TestDocument:
             )
 
     def test_search_by_language(self):
-        docs = digitalarchive.Document.match(languages=language)
-        self.fail()
+        language = digitalarchive.models.Language(id="mon")
+        docs = digitalarchive.Document.match(languages=[language])
+        assert docs.count != 0
+        docs.hydrate()
+        for doc in docs.all():
+            assert language in doc.languages
 
     def test_search_by_translation(self):
         docs = digitalarchive.Document.match(translations=translation)
