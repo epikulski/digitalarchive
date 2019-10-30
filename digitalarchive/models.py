@@ -203,7 +203,7 @@ class Translation(_Asset):
     raw: Union[str, UnhydratedField] = UnhydratedField
 
     def __post_init__(self):
-        self.language = Language(*self.language)
+        self.language = Language(**self.language)
 
 
 @dataclass(eq=False)

@@ -245,8 +245,13 @@ class TestDocument:
             assert language in doc.languages
 
     def test_search_by_translation(self):
-        docs = digitalarchive.Document.match(translations=translation)
-        self.fail()
+        language = digitalarchive.models.Language(id="chi")
+        docs = digitalarchive.Document.match(translations=[language])
+        docs.hydrate(recurse=True)
+        assert docs.count != 0
+        for doc in docs.all():
+            translation_lang_ids = [translation.language.id for translation in doc.translations]
+            assert language.id in translation_lang_ids
 
     def test_search_by_theme(self):
         docs = digitalarchive.Document.match(themes=theme)

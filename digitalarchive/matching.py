@@ -105,11 +105,12 @@ class ResourceMatcher:
             "subjects": "subject",
             "contributors": "contributor",
             "donors": "donor",
-            "languages": "language"
+            "languages": "language",
+            "translations": "translation"
         }
 
         singular_terms = [
-             "translation", "theme"
+              "theme"
         ]
 
         # Rename each term to singular
@@ -127,7 +128,7 @@ class ResourceMatcher:
         for term in terms_to_parse:
             self.query[term] = [str(item.id) for item in self.query[term]]
 
-        # Special handling for langauges, translations, themes, special.
+        # Special handling for langauges, translations, themes.
         # Unlike they above, they only accept singular values
         for term in ["language", "translation", "theme"]:
             if term in self.query.keys():
