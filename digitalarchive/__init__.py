@@ -2,7 +2,7 @@
 A python API and ORM for the Wilson Center's Digital Archive of historical documents.
 """
 # __init__.py
-__version__ = "0.1.4"
+__version__ = "0.1.5"
 
 # Import DA models for convenience.
 from .models import (
