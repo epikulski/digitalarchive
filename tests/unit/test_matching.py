@@ -187,3 +187,7 @@ class TestResourceMatcher:
         test_match.query["start_date"] = 1.1
         with pytest.raises(exceptions.MalformedDateSearch):
             test_match._process_date_searches()
+
+    def test_process_related_model_searches_fail_multitheme(self):
+        with pytest.raises(exceptions.InvalidSearchFieldError):
+            matching.ResourceMatcher(models.Document, themes=[unittest.mock.MagicMock(), unittest.mock.MagicMock()])

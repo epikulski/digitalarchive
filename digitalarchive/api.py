@@ -27,20 +27,6 @@ def search(model: str, params: Optional[Dict] = None) -> dict:
     if params is None:
         params = {}
 
-    # Special handling for parameters that are subclasses of Resource.
-    # We sub in the ID# instead of the whole dataclass.
-    for field in [
-        "collection",
-        "publisher",
-        "repository",
-        "coverage",
-        "subject",
-        "contributor",
-        "donor",
-    ]:
-        if params.get(field) is not None:
-            params[field] = params.get(field).id
-
     # Handle record searches. We transform some of the parameters.
     if model == "record":
         # concatenate all of the keyword fields into the 'q' param
@@ -58,6 +44,11 @@ def search(model: str, params: Optional[Dict] = None) -> dict:
 
         # Format the model name to match API docs.
         params["model"] = model.capitalize()
+
+        # Reformat fields that accept lists. This makes the queries inner joins rather than union all.
+        for field in ["donor", "subject", "contributor", "coverage", "collection"]:
+            if field in params.keys():
+                params[f"{field}[]"] = params.pop(field)
 
         # Send query. Both collections and records use the records.json endpoint.
         logging.debug("[*] Querying %s API endpoint with params: %s", model, str(params))

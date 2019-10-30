@@ -109,16 +109,16 @@ class TestSearch:
         )
 
         # Run search
-        digitalarchive.api.search(model="record", params={"subject": test_subject})
+        digitalarchive.api.search(model="record", params={"subject": "1"})
 
         # Verify Results
         mock_requests.get.assert_called_with(
             "https://digitalarchive.wilsoncenter.org/srv/record.json",
-            params={"subject": "1", "q": "", "model": "Record"},
+            params={"subject[]": "1", "q": "", "model": "Record"},
         )
 
-class TestGet:
 
+class TestGet:
     @unittest.mock.patch("digitalarchive.api.SESSION")
     def test_get(self, mock_requests):
         """Confirm digitalarchive.api sends a correctly formed request."""

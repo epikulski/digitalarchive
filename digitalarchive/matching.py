@@ -38,13 +38,18 @@ class ResourceMatcher:
                 break
 
         # Check that search keywords are valid for given model.
-        allowed_search_fields = [
-            *date_range_searches,
-            *self.model.__dataclass_fields__.keys(),
-        ]
+        allowed_search_fields = [*self.model.__dataclass_fields__.keys()]
+
+        if self.model is models.Document:
+            allowed_search_fields.extend(date_range_searches)
+            allowed_search_fields.append("themes")
+
         for key in self.query:
             if key not in allowed_search_fields:
                 raise exceptions.InvalidSearchFieldError
+
+        # Extract id from searches that are models.
+        self._process_related_model_searches()
 
         # if this is a request for a single record by ID, return only the record
         if self.query.get("id"):
@@ -83,6 +88,61 @@ class ResourceMatcher:
 
     def __repr__(self):
         return f"ResourceMatcher(model={self.model}, query={self.query}, count={self.count})"
+
+    def _process_related_model_searches(self):
+        """
+        Process and format searches by related models.
+
+        We have to re-name the fields from plural to singular to match the DA format.
+        :return:
+        """
+        multi_terms = {
+            "collections": "collection",
+            "publishers": "publisher",
+            "repositories": "repository",
+            "original_coverages": "coverage",
+            "subjects": "subject",
+            "contributors": "contributor",
+            "donors": "donor",
+            "languages": "language",
+            "translations": "translation",
+            "themes": "theme",
+        }
+
+        # Rename each term to singular
+        for key, value in multi_terms.items():
+            if key in self.query.keys():
+                self.query[value] = self.query.pop(key)
+
+        # Build list of terms we need to parse
+        terms_to_parse = []
+        for term in multi_terms.values():
+            if term in self.query.keys():
+                terms_to_parse.append(term)
+
+        # transform each term list into a list of IDs
+        for term in terms_to_parse:
+            self.query[term] = [str(item.id) for item in self.query[term]]
+
+        # Special handling for langauges, translations, themes.
+        # Unlike they above, they only accept singular values
+        for term in ["language", "translation", "theme"]:
+            if term in self.query.keys():
+                if len(self.query[term]) > 1:
+                    logging.error(f"[!] Cannot filter for more than one {term}")
+                    raise exceptions.InvalidSearchFieldError
+                # Pull out the singleton.
+                self.query[term] = self.query[term][0]
+
+        print("break")
+
+        # # Remove fields we don't need to parse
+        # multi_terms = [term for term in multi_terms.items() if term in self.query.keys()]
+        # terms.extend([term for term in singular_terms if term in self.query.keys()])
+
+        # Pull out IDs from each term
+        # for key, value in multi_terms:
+        #     self.query[key] = [str(item.id) for item in self.query[key]]
 
     def _record_by_id(self) -> dict:
         """Get a single record by ID."""
@@ -161,7 +221,6 @@ class ResourceMatcher:
         """Hydrate all of the Resources in a resultset."""
         # Fetch all the records.
         self.list = list(self.list)
-
 
         # Hydrate all the records.
         for resource in self.list:
