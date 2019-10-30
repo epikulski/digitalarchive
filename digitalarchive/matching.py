@@ -157,11 +157,15 @@ class ResourceMatcher:
         """Return all records from a SearchResult."""
         return self.list
 
-    def hydrate(self):
+    def hydrate(self, recurse: bool = False):
         """Hydrate all of the Resources in a resultset."""
         # Fetch all the records.
         self.list = list(self.list)
 
+
         # Hydrate all the records.
         for resource in self.list:
-            resource.hydrate()
+            if isinstance(resource, models.Document):
+                resource.hydrate(recurse=recurse)
+            else:
+                resource.hydrate()

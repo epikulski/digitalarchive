@@ -92,6 +92,25 @@ class TestDocument:
         results.hydrate()
         results = results.all()
 
+        # Check there are no unhydrated fields in the resultant records.
+        for result in results:
+            for key in result.__dataclass_fields__.keys():
+                assert getattr(result, key) is not digitalarchive.models.UnhydratedField
+
+    def test_hydrate_resultset_recursive(self):
+        """Hydrate a resultset and confirm child records of results are not dehydrated."""
+        results = digitalarchive.Document.match(description="soviet eurasia")
+        results.hydrate(recurse=True)
+        results = results.all()
+        for result in results:
+            for translation in result.translations:
+                for key in translation.__dataclass_fields__.keys():
+                    assert getattr(translation, key) is not digitalarchive.models.UnhydratedField
+
+            for transcript in result.transcripts:
+                for key in transcript.__dataclass_fields__.keys():
+                    assert getattr(transcript, key) is not digitalarchive.models.UnhydratedField
+
     def test_date_range_str(self):
         results = digitalarchive.Document.match(
             start_date="19500101", end_date="19510101"
