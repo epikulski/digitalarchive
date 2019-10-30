@@ -214,6 +214,57 @@ class TestDocument:
 
         assert doc.date_range_start == date(2019, 10, 26)
 
+    @unittest.mock.patch("digitalarchive.models.Document.pull")
+    def test_hydrate(self, mock_pull):
+        doc = models.Document(
+            id=1,
+            uri="test",
+            title="test",
+            description="test",
+            doc_date="test",
+            frontend_doc_date="test",
+            slug="test",
+            source_created_at="2019-10-26 16:12:00",
+            source_updated_at="2019-10-26 16:12:00",
+            first_published_at="2019-10-26 16:12:00",
+            date_range_start="20191026")
+
+        doc.hydrate()
+
+        # Check that record was pulled
+        mock_pull.assert_called_once()
+
+    @unittest.mock.patch("digitalarchive.models.Document.pull")
+    def test_hydrate_recursive(self, mock_pull):
+        """Check that recursion logic fires when parameter is enabled."""
+        mock_transcript = unittest.mock.MagicMock()
+        mock_translation = unittest.mock.MagicMock()
+        mock_media_file = unittest.mock.MagicMock()
+        mock_collection = unittest.mock.MagicMock()
+        doc = models.Document(
+            id=1,
+            uri="test",
+            title="test",
+            description="test",
+            doc_date="test",
+            frontend_doc_date="test",
+            slug="test",
+            source_created_at="2019-10-26 16:12:00",
+            source_updated_at="2019-10-26 16:12:00",
+            first_published_at="2019-10-26 16:12:00",
+            date_range_start="20191026",
+            transcripts=[mock_transcript],
+            translations=[mock_translation],
+            media_files=[mock_media_file],
+            collections=[mock_collection]
+        )
+        doc.hydrate(recurse=True)
+
+        # check that mock subordinate records were called.
+        mock_transcript.hydrate.assert_called_once()
+        mock_translation.hydrate.assert_called_once()
+        mock_media_file.hydrate.assert_called_once()
+        mock_collection.hydrate.assert_called_once()
 
 class TestAsset:
     def test_init(self):

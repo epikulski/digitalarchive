@@ -462,7 +462,6 @@ class Document(_MatchableResource, _HydrateableResource, _TimestampedResource):
 
         :param recurse: If true, also hydrate subordinate records.
         todo: See if i can implement the hydration and merge steps using super from _HydrateableResource
-        todo: Make recursive hydration an optional parameter.
         """
         # Preserve unhydrated fields.
         unhydrated_fields = copy.copy(self.__dict__)
