@@ -45,6 +45,11 @@ def search(model: str, params: Optional[Dict] = None) -> dict:
         # Format the model name to match API docs.
         params["model"] = model.capitalize()
 
+        # Reformat fields that accept lists. This makes the queries inner joins rather than union all.
+        for field in ["donor", "subject", "contributor", "coverage", "collection"]:
+            if field in params.keys():
+                params[f"{field}[]"] = params.pop(field)
+
         # Send query. Both collections and records use the records.json endpoint.
         logging.debug("[*] Querying %s API endpoint with params: %s", model, str(params))
         url = f"https://digitalarchive.wilsoncenter.org/srv/record.json"

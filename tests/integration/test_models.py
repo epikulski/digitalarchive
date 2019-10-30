@@ -2,14 +2,11 @@
 # pylint: disable=missing-class-docstring,missing-function-docstring,no-self-use, too-few-public-methods
 
 # Standard Library
-import logging
 from datetime import date
 
 # Application Modules
 import digitalarchive
 
-# Set up logger
-logging.basicConfig(level=logging.DEBUG)
 
 
 class TestDocument:
@@ -169,48 +166,69 @@ class TestDocument:
 
     def test_search_by_collection(self):
         """Search for documents within a given collection"""
-        collection1 = digitalarchive.Collection(
-            id="228", name="Purges in 1950s China", slug="purges-in-1950s-china"
-        )
-        archive.Document.match(collections=[collection])
-
-        self.fail()
+        collection_1 = digitalarchive.models.Collection(id="273", name="Chinese Nuclear Testing", slug="test")
+        collection_2 = digitalarchive.models.Collection(id="105", name="Chinese Nuclear History", slug="test")
+        docs = digitalarchive.Document.match(collections=[collection_1, collection_2])
+        docs.hydrate()
+        assert docs.count != 0
+        for doc in docs.all():
+            assert(
+                collection_1 in doc.collections and
+                collection_2 in doc.collections
+            )
 
     def test_search_by_publisher(self):
         """Search for documents by a Publisher"""
+        publisher = digitalarchive.models.Publisher(id="7", name="happ", value="happ")
         docs = digitalarchive.Document.match(publishers=[publisher])
-        self.fail()
+        docs.hydrate()
+        for doc in docs.all():
+            assert publisher in doc.publishers
 
     def test_search_by_repository(self):
         """Search for documents by a Repository"""
-        docs = digitalarchive.Document.match(repositories=[repository])
-        self.fail()
+        repo = digitalarchive.Repository(id="81", name="test")
+        docs = digitalarchive.Document.match(repositories=[repo])
+        docs.hydrate()
+        for doc in docs.all():
+            assert repo in doc.repositories
 
     def test_search_by_coverage(self):
         """Search for a document by a Coverage"""
-        docs = digitalarchive.Document.match(coverages=[coverage])
-        self.fail()
+        cov = digitalarchive.Coverage(id="341", name="Abkhazia", uri="test")
+        docs = digitalarchive.Document.match(original_coverages=[cov])
+        docs.hydrate()
+        for doc in docs.all():
+            assert cov in doc.original_coverages
+
 
     def test_search_by_subject(self):
         """Search for a document by Subject"""
-        docs = digitalarchive.Document.match(subjects=[subject])
         self.fail()
+
 
     def test_search_by_contributor(self):
         """Search for a document by Contributor"""
-        docs = digitalarchive.Document.match(contributors=[contributor])
-        self.fail()
+        contributor1 = digitalarchive.models.Contributor(id="636", name="Nixon")
+        contributor2 = digitalarchive.models.Contributor(id="1067", name="Zhou Enlai")
+        docs = digitalarchive.Document.match(contributors=[contributor1, contributor2])
+        docs.hydrate()
+        for doc in docs.all():
+            assert (
+                contributor1 in doc.contributors and
+                contributor2 in doc.contributors
+            )
 
     def test_search_by_donor(self):
-        donor1 = digitalarchive.models.Donor(id="13", name="Blavatnik")
-        donor2 = digitalarchive.models.Donor(id="20", name="Carnegie")
-        docs = digitalarchive.Document.match(description="burma", donors=[donor1, donor2])
+        donor1 = digitalarchive.models.Donor(id="12", name="MacArthur")
+        donor2 = digitalarchive.models.Donor(id="13", name="Blavatnik")
+        docs = digitalarchive.Document.match(donors=[donor1, donor2])
 
         # Check all docs match at least one of the searched for collections
         for doc in docs.all():
             doc.hydrate()
             assert (
-                donor1 in doc.donors or
+                donor1 in doc.donors and
                 donor2 in doc.donors
             )
 

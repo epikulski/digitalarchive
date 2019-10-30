@@ -101,7 +101,7 @@ class ResourceMatcher:
             "collections": "collection",
             "publishers": "publisher",
             "repositories": "repository",
-            "coverages": "coverage",
+            "original_coverages": "coverage",
             "subjects": "subject",
             "contributors": "contributor",
             "donors": "donor",
@@ -110,6 +110,7 @@ class ResourceMatcher:
         singular_terms = [
             "language", "translation", "theme"
         ]
+
         # Rename each term to singular
         for key, value in multi_terms.items():
             if key in self.query.keys():
