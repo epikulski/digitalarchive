@@ -41,6 +41,7 @@ class _Resource:
         else:
             return self.id == other.id
 
+
 @dataclass(eq=False)
 class _MatchableResource(_Resource):
     """Abstract class for Resources that can be searched against."""
@@ -83,8 +84,9 @@ class _HydrateableResource(_Resource):
         # Re-initialize the object.
         self.__init__(**hydrated_fields)
 
+
 class _TimestampedResource(_Resource):
-    #pylint: disable=too-few-public-methods
+    # pylint: disable=too-few-public-methods
 
     def _process_timestamps(self):
         # Turn date fields from strings into datetimes.
@@ -299,6 +301,7 @@ class Collection(_MatchableResource, _HydrateableResource, _TimestampedResource)
         # Turn date fields from strings into datetimes.
         self._process_timestamps()
 
+
 @dataclass(eq=False)
 class Repository(_MatchableResource, _HydrateableResource):
     name: str
@@ -454,10 +457,11 @@ class Document(_MatchableResource, _HydrateableResource, _TimestampedResource):
         kwargs["model"] = "Record"
         return matching.ResourceMatcher(cls, **kwargs)
 
-    def hydrate(self):
+    def hydrate(self, recurse: bool = False):
         """
         Hydrates document and subordinate assets.
 
+        :param recurse: If true, also hydrate subordinate records.
         todo: See if i can implement the hydration and merge steps using super from _HydrateableResource
         """
         # Preserve unhydrated fields.
@@ -476,7 +480,8 @@ class Document(_MatchableResource, _HydrateableResource, _TimestampedResource):
         self.__init__(**hydrated_fields)
 
         # Hydrate Assets
-        [transcript.hydrate() for transcript in self.transcripts]
-        [translation.hydrate() for translation in self.translations]
-        [media_file.hydrate() for media_file in self.media_files]
-        [collection.hydrate() for collection in self.collections]
+        if recurse is True:
+            [transcript.hydrate() for transcript in self.transcripts]
+            [translation.hydrate() for translation in self.translations]
+            [media_file.hydrate() for media_file in self.media_files]
+            [collection.hydrate() for collection in self.collections]
