@@ -487,11 +487,41 @@ class Document(_MatchableResource, _HydrateableResource, _TimestampedResource):
             [collection.hydrate() for collection in self.collections]
 
 
-class Theme(_Resource):
+@dataclass(eq=False)
+class Theme(_HydrateableResource):
     """These never appear on any record model, but can be passed as a search param to Document."""
 
-    title: str = None
-    value: Optional[str] = None
-    description: Optional[str] = None
-    main_src: Optional[str] = None
-    slug: Optional[str] = None
+    # Required fields
+    slug: str
+
+    # Optional Fields
+    title: Union[str, UnhydratedField] = UnhydratedField
+    value: Union[str, UnhydratedField] = UnhydratedField
+    description: Union[str, UnhydratedField] = UnhydratedField
+    main_src: Union[str, UnhydratedField] = UnhydratedField
+    uri: Union[str, UnhydratedField] = UnhydratedField
+    featured_resources: Union[List[dict], UnhydratedField] = UnhydratedField
+    has_map: Union[str, UnhydratedField] = UnhydratedField
+    has_timeline: Union[str, UnhydratedField] = UnhydratedField
+    featured_collections: Union[List[Collection], UnhydratedField] = UnhydratedField
+    dates_with_events: Union[list, UnhydratedField] = UnhydratedField
+
+    # Private fields.
+    endpoint: str = "theme"
+
+    def __post_init__(self):
+        if self.featured_collections is not UnhydratedField:
+            parsed_collections = []
+            for collection in self.featured_collections:
+                if not isinstance(collection, Collection):
+                    parsed_collections.append(Collection(**collection))
+                else: parsed_collections.append(collection)
+
+            self.featured_collections = parsed_collections
+
+    def pull(self):
+        """Update a given record using data from the remote DA."""
+        data = api.get(endpoint=self.endpoint, resource_id=self.slug)
+        self.__init__(**data)
+
+
