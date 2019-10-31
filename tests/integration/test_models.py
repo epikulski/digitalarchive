@@ -96,6 +96,7 @@ class TestDocument:
         results = digitalarchive.Document.match(description="soviet eurasia")
         results.hydrate()
         results = results.all()
+        assert results.count != 0
 
         # Check there are no unhydrated fields in the resultant records.
         for result in results:
@@ -193,6 +194,7 @@ class TestDocument:
         publisher = digitalarchive.models.Publisher(id="7", name="happ", value="happ")
         docs = digitalarchive.Document.match(publishers=[publisher])
         docs.hydrate()
+        assert docs.count != 0
         for doc in docs.all():
             assert publisher in doc.publishers
 
@@ -201,6 +203,7 @@ class TestDocument:
         repo = digitalarchive.Repository(id="81", name="test")
         docs = digitalarchive.Document.match(repositories=[repo])
         docs.hydrate()
+        assert docs.count != 0
         for doc in docs.all():
             assert repo in doc.repositories
 
@@ -209,6 +212,7 @@ class TestDocument:
         cov = digitalarchive.Coverage(id="341", name="Abkhazia", uri="test")
         docs = digitalarchive.Document.match(original_coverages=[cov])
         docs.hydrate()
+        assert docs.count != 0
         for doc in docs.all():
             assert cov in doc.original_coverages
 
