@@ -149,3 +149,20 @@ class TestResourceMatcher:
             str(test_match)
             == "ResourceMatcher(model=<class 'digitalarchive.models._Resource'>, query={'id': 1}, count=1)"
         )
+
+    @unittest.mock.patch("digitalarchive.api.search")
+    def test_subject_pagination(self, mock_api_search):
+
+        mock_api_search.return_value = {
+            "pagination": {"totalItems": 2},
+            "list": [unittest.mock.MagicMock(), unittest.mock.MagicMock()],
+        }
+
+        test_match = matching.ResourceMatcher(models.Subject, name="test_name", items_per_page=1)
+
+        # Confirm the list attribute is properly generated.
+        try:
+            test_list = test_match.list
+        except AttributeError:
+            self.fail()
+
