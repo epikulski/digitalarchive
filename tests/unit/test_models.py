@@ -7,14 +7,25 @@ from datetime import date, datetime
 import pytest
 
 import digitalarchive.models as models
+import digitalarchive.exceptions as exceptions
 
 
+@unittest.mock.patch("digitalarchive.models.matching")
 class TestMatchableResource:
-    @unittest.mock.patch("digitalarchive.models.matching")
-    def test_match(self, mock_matching):
+    def test_match_name(self, mock_matching):
         """Check appropriate model and kwargs passed to matching."""
         models.Subject.match(name="Soviet")
         mock_matching.ResourceMatcher.assert_called_with(models.Subject, term="Soviet")
+
+    def test_match_value(self, mock_matching):
+        models.Subject.match(value="Soviet")
+        mock_matching.ResourceMatcher.assert_called_with(models.Subject, term="Soviet")
+
+    def test_match_handle_term_and_name(self, mock_matching):
+        models.Subject.match(name="Soviet", value="China")
+        mock_matching.ResourceMatcher.assert_called_with(
+            models.Subject, term="Soviet China"
+        )
 
 
 class TestHydrateableResource:
@@ -209,7 +220,7 @@ class TestDocument:
             source_created_at="2019-10-26 16:12:00",
             source_updated_at="2019-10-26 16:12:00",
             first_published_at="2019-10-26 16:12:00",
-            date_range_start="20191026"
+            date_range_start="20191026",
         )
 
         assert doc.date_range_start == date(2019, 10, 26)
@@ -227,7 +238,8 @@ class TestDocument:
             source_created_at="2019-10-26 16:12:00",
             source_updated_at="2019-10-26 16:12:00",
             first_published_at="2019-10-26 16:12:00",
-            date_range_start="20191026")
+            date_range_start="20191026",
+        )
 
         doc.hydrate()
 
@@ -256,7 +268,7 @@ class TestDocument:
             transcripts=[mock_transcript],
             translations=[mock_translation],
             media_files=[mock_media_file],
-            collections=[mock_collection]
+            collections=[mock_collection],
         )
         doc.hydrate(recurse=True)
 
@@ -265,6 +277,27 @@ class TestDocument:
         mock_translation.hydrate.assert_called_once()
         mock_media_file.hydrate.assert_called_once()
         mock_collection.hydrate.assert_called_once()
+
+    def test_match_invalid_field(self):
+        with pytest.raises(exceptions.InvalidSearchFieldError):
+            models.Document.match(bad_key="bad_value")
+
+    def test_process_date_search_invalid_date_str(self):
+        with pytest.raises(exceptions.MalformedDateSearch):
+            models.Document._process_date_searches({"start_date": "YYYYMM"})
+
+    def test_process_date_search_invalid_date_obj(self):
+        with pytest.raises(exceptions.MalformedDateSearch):
+            models.Document._process_date_searches(
+                {"start_date": models.UnhydratedField}
+            )
+
+    def test_process_related_model_searches_too_many_params(self):
+        with pytest.raises(exceptions.InvalidSearchFieldError):
+            models.Document._process_related_model_searches(
+                {"languages": [unittest.mock.MagicMock(), unittest.mock.MagicMock()]}
+            )
+
 
 class TestAsset:
     def test_init(self):
