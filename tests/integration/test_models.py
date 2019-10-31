@@ -136,7 +136,7 @@ class TestDocument:
 
     def test_date_range_obj(self):
         start_date = date(1950, 1, 1)
-        end_date = date(1950, 1, 1)
+        end_date = date(1951, 1, 1)
         results = digitalarchive.Document.match(
             start_date=start_date, end_date=end_date
         )
