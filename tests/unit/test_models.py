@@ -14,7 +14,7 @@ class TestMatchableResource:
     def test_match(self, mock_matching):
         """Check appropriate model and kwargs passed to matching."""
         models.Subject.match(name="Soviet")
-        mock_matching.ResourceMatcher.assert_called_with(models.Subject, name="Soviet")
+        mock_matching.ResourceMatcher.assert_called_with(models.Subject, term="Soviet")
 
 
 class TestHydrateableResource:
