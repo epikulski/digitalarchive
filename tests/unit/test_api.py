@@ -81,3 +81,11 @@ class TestGet:
         # Confirm exception raised.
         with pytest.raises(Exception):
             digitalarchive.api.get(endpoint="document", resource_id="1")
+
+class TestGetDateRange:
+
+    @unittest.mock.patch("digitalarchive.api.SESSION")
+    def test_get_date_range(self, mock_session):
+        test_date_range = digitalarchive.api.get_date_range()
+        mock_session.get.assert_called_once()
+        assert test_date_range is mock_session.get().json()

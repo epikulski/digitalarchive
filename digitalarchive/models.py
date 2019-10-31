@@ -435,6 +435,7 @@ class Document(_MatchableResource, _HydrateableResource, _TimestampedResource):
         ]
         for key in kwargs:
             if key not in allowed_search_fields:
+                logging.error(f"[!] {key} is not a valid search term for {cls}")
                 raise exceptions.InvalidSearchFieldError
 
         # Process date searches if they are present.

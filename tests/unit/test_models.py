@@ -78,7 +78,7 @@ class TestCollection:
         """Check appropriate model and kwargs passed to matching."""
         models.Collection.match(name="Soviet")
         mock_matching.ResourceMatcher.assert_called_with(
-            models.Collection, name="Soviet"
+            models.Collection, term="Soviet"
         )
 
     def test_datetime_parsing(self):
@@ -111,9 +111,9 @@ class TestDocument:
     @unittest.mock.patch("digitalarchive.models.matching")
     def test_match(self, mock_matching):
         """Check appropriate model and kwargs passed to matching."""
-        models.Document.match(name="Soviet")
+        models.Document.match(title="Soviet")
         mock_matching.ResourceMatcher.assert_called_with(
-            models.Document, name="Soviet", model="Record"
+            models.Document, q="Soviet", model="Record"
         )
 
     def test_valid_eq(self):
