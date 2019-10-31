@@ -50,9 +50,21 @@ class _MatchableResource(_Resource):
     def match(cls, **kwargs) -> matching.ResourceMatcher:
         """Find a record based on passed kwargs. Returns all if none passed"""
 
+        # Check that we no invalid search terms were passed.
         for key in kwargs:
             if key not in cls.__dataclass_fields__.keys():
                 raise exceptions.InvalidSearchFieldError
+
+        # Prepare the "term" search field.
+        # If we've got both a name and a value, join them.
+        if kwargs.get("name") and kwargs.get("value"):
+            kwargs["term"] = " ".join([kwargs.get("name"), kwargs.get("value")])
+
+        # Otherwise, treat the one that exists as the term.
+        elif kwargs.get("name"):
+            kwargs["term"] = kwargs["name"]
+        elif kwargs.get("value"):
+            kwargs["term"] = kwargs["value"]
 
         return matching.ResourceMatcher(cls, **kwargs)
 
@@ -581,6 +593,18 @@ class Document(_MatchableResource, _HydrateableResource, _TimestampedResource):
             ]
         ):
             kwargs = Document._process_related_model_searches(kwargs)
+
+        # Prepare the 'q' fulltext search field.
+        keywords = []
+        for field in ["name", "title", "description", "slug", "q"]:
+            if kwargs.get(field) is not None:
+                keywords.append(kwargs.pop(field))
+        kwargs["q"] = " ".join(keywords)
+
+        # Reformat fields that accept lists. This makes the queries inner joins rather than union all.
+        for field in ["donor", "subject", "contributor", "coverage", "collection"]:
+            if field in kwargs.keys():
+                kwargs[f"{field}[]"] = kwargs.pop(field)
 
         # Run the match.
         return matching.ResourceMatcher(cls, **kwargs)
