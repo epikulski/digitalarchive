@@ -127,6 +127,18 @@ class TestDocument:
             models.Document, q="Soviet", model="Record"
         )
 
+    def test_process_date_search_only_start_date(self):
+        self.fail()
+
+    @unittest.mock.patch("digitalarchive.models.api")
+    def test_process_date_search_only_end_date(self, mock_api):
+        test_date = date(1989, 4, 15)
+        mock_api.get_date_range.return_value = {"begin": "19890414"}
+        test_formatted_query = models.Document._process_date_searches({"end_date": test_date})
+
+        # Check that query is properly formed.
+        assert test_formatted_query == {"end_date": "19890415", "start_date": "19890414"}
+
     def test_valid_eq(self):
         """Compare a search result doc and a hydrated doc."""
         hydrated_doc = models.Document(
