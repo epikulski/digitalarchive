@@ -82,6 +82,27 @@ class TestHydrateableResource:
         # Confirm doc is now hydrated
         assert mock_stub_doc.source == "Test Source"
 
+    @unittest.mock.patch("digitalarchive.models.api.get")
+    def test_hydrate(self, mock_api):
+        """Test the zipping logic during hydration.
+
+        We use a subject instance here for convenience.
+        """
+
+        # Prep mocks
+        subject = models.Subject(id="1", name="test_name", value="test_value")
+        mock_api.return_value = {"id": "1", "name": "test_name", "uri": "test_uri"}
+
+        # Hydrate the resource.
+        subject.hydrate()
+
+        # Check that mock pull was called.
+        mock_api.assert_called_once()
+
+        # check that result is merged
+        assert subject.name == "test_name"
+        assert subject.value == "test_value"
+        assert subject.uri == "test_uri"
 
 class TestCollection:
     @unittest.mock.patch("digitalarchive.models.matching")
@@ -126,9 +147,6 @@ class TestDocument:
         mock_matching.ResourceMatcher.assert_called_with(
             models.Document, q="Soviet", model="Record"
         )
-
-    def test_process_date_search_only_start_date(self):
-        self.fail()
 
     @unittest.mock.patch("digitalarchive.models.api")
     def test_process_date_search_only_end_date(self, mock_api):
@@ -289,6 +307,66 @@ class TestDocument:
         mock_translation.hydrate.assert_called_once()
         mock_media_file.hydrate.assert_called_once()
         mock_collection.hydrate.assert_called_once()
+
+    def test_parse_child_records(self):
+        test_subject = {
+            "id": "1",
+            "name": "test_subject"
+        }
+        doc = models.Document(
+            id=1,
+            uri="test",
+            title="test",
+            description="test",
+            doc_date="test",
+            frontend_doc_date="test",
+            slug="test",
+            source_created_at="2019-10-26 16:12:00",
+            source_updated_at="2019-10-26 16:12:00",
+            first_published_at="2019-10-26 16:12:00",
+            date_range_start="20191026",
+            subjects=[test_subject]
+            )
+
+        # Check that child records expanded
+        assert isinstance(doc.subjects[0], models.Subject)
+        assert doc.subjects[0].id == "1"
+        assert doc.subjects[0].name == "test_subject"
+
+    def test_parse_child_records_empty(self):
+        """Test that empty list fields are handled properly. """
+        doc = models.Document(
+            id=1,
+            uri="test",
+            title="test",
+            description="test",
+            doc_date="test",
+            frontend_doc_date="test",
+            slug="test",
+            source_created_at="2019-10-26 16:12:00",
+            source_updated_at="2019-10-26 16:12:00",
+            first_published_at="2019-10-26 16:12:00",
+            date_range_start="20191026",
+            subjects=[]
+            )
+
+        # Check that our subject field wasn't modified.
+        assert isinstance(doc.subjects, list)
+
+        # check that the other child records are still unhydrated.
+        assert doc.publishers is models.UnhydratedField
+
+
+    def test_process_related_model_searches_languages(self):
+        test_language = models.Language(id="1")
+        query = {
+            "languages": [test_language]
+        }
+
+        query = models.Document._process_related_model_searches(query)
+
+        # Check that the ID was pulled out, languages renamed to language.
+        assert query["language"] == "1"
 
     def test_match_invalid_field(self):
         with pytest.raises(exceptions.InvalidSearchFieldError):
