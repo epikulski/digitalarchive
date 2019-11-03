@@ -49,6 +49,23 @@ class _MatchableResource(_Resource):
     @classmethod
     def match(cls, **kwargs) -> matching.ResourceMatcher:
         """Find a record based on passed kwargs. Returns all if none passed"""
+
+        # Check that we no invalid search terms were passed.
+        for key in kwargs:
+            if key not in cls.__dataclass_fields__.keys():
+                raise exceptions.InvalidSearchFieldError
+
+        # Prepare the "term" search field.
+        # If we've got both a name and a value, join them.
+        if kwargs.get("name") and kwargs.get("value"):
+            kwargs["term"] = " ".join([kwargs.pop("name"), kwargs.pop("value")])
+
+        # Otherwise, treat the one that exists as the term.
+        elif kwargs.get("name"):
+            kwargs["term"] = kwargs.pop("name")
+        elif kwargs.get("value"):
+            kwargs["term"] = kwargs.pop("value")
+
         return matching.ResourceMatcher(cls, **kwargs)
 
 
@@ -399,54 +416,6 @@ class Document(_MatchableResource, _HydrateableResource, _TimestampedResource):
         if isinstance(self.date_range_start, str):
             self.date_range_start = self._parse_date_range_start(self.date_range_start)
 
-    def _parse_child_records(self):
-        child_fields = {
-            "subjects": Subject,
-            "transcripts": Transcript,
-            "media_files": MediaFile,
-            "languages": Language,
-            "creators": Contributor,
-            "collections": Collection,
-            "attachments": Document,
-            "links": Document,
-            "publishers": Publisher,
-            "translations": Translation,
-            "contributors": Contributor,
-            "original_coverages": Coverage,
-            "repositories": Repository,
-            "classifications": Classification,
-            "donors": Donor,
-        }
-
-        # If we are dealing with an unhydrated record, don't attempt to process child records.
-        for field in child_fields:
-            if self.__getattribute__(field) is UnhydratedField:
-                return
-
-        # If record is hydrated, transform child records to appropriate model.
-        for field in child_fields:
-
-            # Check if list is empty, skip if yes.
-            if len(self.__getattribute__(field)) == 0:
-                pass
-
-            # If field is a list of dicts, transform those dicts to models and update self.
-            else:
-                sample_resource = self.__getattribute__(field)[0]
-                if isinstance(sample_resource, dict):
-                    parsed_resources = [
-                        child_fields[field](**resource)
-                        for resource in self.__getattribute__(field)
-                    ]
-                    setattr(self, field, parsed_resources)
-
-    @staticmethod
-    def _parse_date_range_start(doc_date: str) -> date:
-        year = int(doc_date[:4])
-        month = int(doc_date[4:6])
-        day = int(doc_date[-2:])
-        return date(year, month, day)
-
     @classmethod
     def match(cls, **kwargs) -> matching.ResourceMatcher:
         """Custom matcher limits results to correct model.
@@ -454,7 +423,58 @@ class Document(_MatchableResource, _HydrateableResource, _TimestampedResource):
             * q: a str search term.
 
         """
+        # Limit search to only Documents (this excludes Collections from search result).
         kwargs["model"] = "Record"
+
+        # Check that search keywords are valid.
+        allowed_search_fields = [
+            *cls.__dataclass_fields__.keys(),
+            "start_date",
+            "end_date",
+            "themes",
+        ]
+        for key in kwargs:
+            if key not in allowed_search_fields:
+                logging.error(
+                    f"[!] {key} is not a valid search term for {cls}. Valid terms: {allowed_search_fields}"
+                )
+                raise exceptions.InvalidSearchFieldError
+
+        # Process date searches if they are present.
+        if any(key in kwargs.keys() for key in ["start_date", "end_date"]):
+            kwargs = Document._process_date_searches(kwargs)
+
+        # Process any related model searches.
+        if any(
+            key in kwargs.keys()
+            for key in [
+                "collections",
+                "publishers",
+                "repositories",
+                "original_coverages",
+                "subjects",
+                "contributors",
+                "donors",
+                "languages",
+                "translations",
+                "themes",
+            ]
+        ):
+            kwargs = Document._process_related_model_searches(kwargs)
+
+        # Prepare the 'q' fulltext search field.
+        keywords = []
+        for field in ["name", "title", "description", "slug", "q"]:
+            if kwargs.get(field) is not None:
+                keywords.append(kwargs.pop(field))
+        kwargs["q"] = " ".join(keywords)
+
+        # Reformat fields that accept lists. This makes the queries inner joins rather than union all.
+        for field in ["donor", "subject", "contributor", "coverage", "collection"]:
+            if field in kwargs.keys():
+                kwargs[f"{field}[]"] = kwargs.pop(field)
+
+        # Run the match.
         return matching.ResourceMatcher(cls, **kwargs)
 
     def hydrate(self, recurse: bool = False):
@@ -486,6 +506,136 @@ class Document(_MatchableResource, _HydrateableResource, _TimestampedResource):
             [media_file.hydrate() for media_file in self.media_files]
             [collection.hydrate() for collection in self.collections]
 
+    def _parse_child_records(self):
+        child_fields = {
+            "subjects": Subject,
+            "transcripts": Transcript,
+            "media_files": MediaFile,
+            "languages": Language,
+            "creators": Contributor,
+            "collections": Collection,
+            "attachments": Document,
+            "links": Document,
+            "publishers": Publisher,
+            "translations": Translation,
+            "contributors": Contributor,
+            "original_coverages": Coverage,
+            "repositories": Repository,
+            "classifications": Classification,
+            "donors": Donor,
+        }
+
+        # If we are dealing with an unhydrated record, don't attempt to process child records.
+        for field in child_fields:
+            if self.__getattribute__(field) is UnhydratedField:
+                continue
+
+            # # If record is hydrated, transform child records to appropriate model.
+            # Check if list is empty, skip if yes.
+            elif len(self.__getattribute__(field)) == 0:
+                pass
+
+            # If field is a list of dicts, transform those dicts to models and update self.
+            else:
+                sample_resource = self.__getattribute__(field)[0]
+                if isinstance(sample_resource, dict):
+                    parsed_resources = [
+                        child_fields[field](**resource)
+                        for resource in self.__getattribute__(field)
+                    ]
+                    setattr(self, field, parsed_resources)
+
+    @staticmethod
+    def _parse_date_range_start(doc_date: str) -> date:
+        year = int(doc_date[:4])
+        month = int(doc_date[4:6])
+        day = int(doc_date[-2:])
+        return date(year, month, day)
+
+    @staticmethod
+    def _process_date_searches(query: dict) -> dict:
+        """Run formatting and type checks against  date search fields."""
+        date_search_terms = ["start_date", "end_date"]
+
+        # Handle open-ended date searches.
+        if "start_date" in query.keys() and "end_date" not in query.keys():
+            query["end_date"] = date.today()
+        elif "end_date" in query.keys() and "start_date" not in query.keys():
+            # Pull earliest record date from API.
+            da_date_range = api.get_date_range()
+            start_date = Document._parse_date_range_start(da_date_range["begin"])
+            query["start_date"] = start_date
+
+        # Transform datetime objects into formatted string and return
+        for field in date_search_terms:
+            search_date = query[field]
+            if isinstance(search_date, date):
+                query[
+                    field
+                ] = f"{search_date.year}{search_date.strftime('%m')}{search_date.strftime('%d')}"
+
+            # If passed a string but its wrong length, raise.
+            elif isinstance(search_date, str) and len(search_date) != 8:
+                logging.error("[!] Invalid date string! Format is: YYYYMMDD")
+                raise exceptions.MalformedDateSearch
+
+            # If something else passed as keyword, bail out.
+            elif not (isinstance(search_date, str) or isinstance(search_date, date)):
+                logging.error("[!] Dates must be type str or datetime.date")
+                raise exceptions.MalformedDateSearch
+
+        # Return the reformatted query
+        return query
+
+    @staticmethod
+    def _process_related_model_searches(query: dict) -> dict:
+        """
+        Process and format searches by related models.
+
+        We have to re-name the fields from plural to singular to match the DA format.
+        :return:
+        """
+        multi_terms = {
+            "collections": "collection",
+            "publishers": "publisher",
+            "repositories": "repository",
+            "original_coverages": "coverage",
+            "subjects": "subject",
+            "contributors": "contributor",
+            "donors": "donor",
+            "languages": "language",
+            "translations": "translation",
+            "themes": "theme",
+        }
+
+        # Rename each term to singular
+        for key, value in multi_terms.items():
+            if key in query.keys():
+                query[value] = query.pop(key)
+
+        # Build list of terms we need to parse
+        terms_to_parse = []
+        for term in multi_terms.values():
+            if term in query.keys():
+                terms_to_parse.append(term)
+
+        # transform each term list into a list of IDs
+        for term in terms_to_parse:
+            query[term] = [str(item.id) for item in query[term]]
+
+        # Special handling for langauges, translations, themes.
+        # Unlike they above, they only accept singular values
+        for term in ["language", "translation", "theme"]:
+            if term in query.keys():
+                if len(query[term]) > 1:
+                    logging.error(f"[!] Cannot filter for more than one {term}")
+                    raise exceptions.InvalidSearchFieldError
+                # Pull out the singleton.
+                query[term] = query[term][0]
+
+        # Return the reformatted query.
+        return query
+
 
 @dataclass(eq=False)
 class Theme(_HydrateableResource):
@@ -510,18 +660,22 @@ class Theme(_HydrateableResource):
     endpoint: str = "theme"
 
     def __post_init__(self):
+        """Parse out any child collections that were passed"""
         if self.featured_collections is not UnhydratedField:
             parsed_collections = []
             for collection in self.featured_collections:
-                if not isinstance(collection, Collection):
+                if isinstance(collection, Collection):
+                    parsed_collections.append(collection)
+                else:
                     parsed_collections.append(Collection(**collection))
-                else: parsed_collections.append(collection)
 
             self.featured_collections = parsed_collections
 
     def pull(self):
-        """Update a given record using data from the remote DA."""
+        """
+        Update a given record using data from the remote DA.
+
+        Note: Differes from parent as themes use the slug as an ID
+        """
         data = api.get(endpoint=self.endpoint, resource_id=self.slug)
         self.__init__(**data)
-
-
