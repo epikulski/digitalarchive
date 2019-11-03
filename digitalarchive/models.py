@@ -435,7 +435,9 @@ class Document(_MatchableResource, _HydrateableResource, _TimestampedResource):
         ]
         for key in kwargs:
             if key not in allowed_search_fields:
-                logging.error(f"[!] {key} is not a valid search term for {cls}")
+                logging.error(
+                    f"[!] {key} is not a valid search term for {cls}. Valid terms: {allowed_search_fields}"
+                )
                 raise exceptions.InvalidSearchFieldError
 
         # Process date searches if they are present.
@@ -658,17 +660,22 @@ class Theme(_HydrateableResource):
     endpoint: str = "theme"
 
     def __post_init__(self):
+        """Parse out any child collections that were passed"""
         if self.featured_collections is not UnhydratedField:
             parsed_collections = []
             for collection in self.featured_collections:
-                if not isinstance(collection, Collection):
-                    parsed_collections.append(Collection(**collection))
-                else:
+                if isinstance(collection, Collection):
                     parsed_collections.append(collection)
+                else:
+                    parsed_collections.append(Collection(**collection))
 
             self.featured_collections = parsed_collections
 
     def pull(self):
-        """Update a given record using data from the remote DA."""
+        """
+        Update a given record using data from the remote DA.
+
+        Note: Differes from parent as themes use the slug as an ID
+        """
         data = api.get(endpoint=self.endpoint, resource_id=self.slug)
         self.__init__(**data)
