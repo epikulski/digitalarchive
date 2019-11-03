@@ -526,13 +526,11 @@ class Document(_MatchableResource, _HydrateableResource, _TimestampedResource):
         # If we are dealing with an unhydrated record, don't attempt to process child records.
         for field in child_fields:
             if self.__getattribute__(field) is UnhydratedField:
-                return
+                continue
 
-        # If record is hydrated, transform child records to appropriate model.
-        for field in child_fields:
-
+            # # If record is hydrated, transform child records to appropriate model.
             # Check if list is empty, skip if yes.
-            if len(self.__getattribute__(field)) == 0:
+            elif len(self.__getattribute__(field)) == 0:
                 pass
 
             # If field is a list of dicts, transform those dicts to models and update self.
