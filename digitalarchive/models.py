@@ -362,6 +362,7 @@ class Document(_MatchableResource, _HydrateableResource, _TimestampedResource):
         Avoid constructing Documents directly--use the `match` function to create
         Documents by keyword search or by ID.
 
+
     **Attributes present on all Documents**
 
     :var str id: The ID# of the record in the DA.
@@ -379,6 +380,7 @@ class Document(_MatchableResource, _HydrateableResource, _TimestampedResource):
 
     :var datetime first_published_at: When the document was first made publically accessible.
     :vartype first_published_at: :class:`datetime.datetime`
+
 
     **Attributes present only on hydrated Documents**
 
