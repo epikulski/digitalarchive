@@ -150,44 +150,19 @@ class TestResourceMatcher:
             == "ResourceMatcher(model=<class 'digitalarchive.models._Resource'>, query={'id': 1}, count=1)"
         )
 
-    @unittest.mock.patch("digitalarchive.matching.api")
-    def test_process_date_searches_obj(self, mock_api):
-        """Create a test object with a date and confirm formatting."""
-        test_match = matching.ResourceMatcher(models.Document, id=1)
-        test_match.query["start_date"] = date(1950, 1, 1)
-        test_match._process_date_searches()
-        assert test_match.query["start_date"] == "19500101"
+    @unittest.mock.patch("digitalarchive.api.search")
+    def test_subject_pagination(self, mock_api_search):
 
-    @unittest.mock.patch("digitalarchive.matching.api")
-    def test_process_date_searches_str(self, mock_api):
-        """Pass a unsupported type to date search, confirm error raised """
-        test_match = matching.ResourceMatcher(models.Document, id=1)
-        test_match.query["start_date"] = "19500101"
-        test_match._process_date_searches()
-        assert test_match.query["start_date"] == "19500101"
+        mock_api_search.return_value = {
+            "pagination": {"totalItems": 2},
+            "list": [unittest.mock.MagicMock(), unittest.mock.MagicMock()],
+        }
 
-    @unittest.mock.patch("digitalarchive.matching.api")
-    def test_process_date_search_invalid_model(self, mock_api):
-        test_match = matching.ResourceMatcher(models.Subject, id=1)
-        test_match.query["start_date"] = "19500101"
-        with pytest.raises(exceptions.InvalidSearchFieldError):
-            test_match._process_date_searches()
+        test_match = matching.ResourceMatcher(models.Subject, name="test_name", items_per_page=1)
 
-    @unittest.mock.patch("digitalarchive.matching.api")
-    def test_process_date_searches_invalid_len(self, mock_api):
-        test_match = matching.ResourceMatcher(models.Document, id=1)
-        test_match.query["start_date"] = "195001"
-        with pytest.raises(exceptions.MalformedDateSearch):
-            test_match._process_date_searches()
+        # Confirm the list attribute is properly generated.
+        try:
+            test_list = test_match.list
+        except AttributeError:
+            self.fail()
 
-    @unittest.mock.patch("digitalarchive.matching.api")
-    def test_process_date_searches_invalid_type(self, mock_api):
-        """Pass a unsupported type to date search, confirm """
-        test_match = matching.ResourceMatcher(models.Document, id=1)
-        test_match.query["start_date"] = 1.1
-        with pytest.raises(exceptions.MalformedDateSearch):
-            test_match._process_date_searches()
-
-    def test_process_related_model_searches_fail_multitheme(self):
-        with pytest.raises(exceptions.InvalidSearchFieldError):
-            matching.ResourceMatcher(models.Document, themes=[unittest.mock.MagicMock(), unittest.mock.MagicMock()])
