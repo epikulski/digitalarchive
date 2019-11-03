@@ -68,6 +68,7 @@ class _HydrateableResource(_Resource):
         Note: Some models expose inconsistent fields between
         search results and when it is accessed directly via the
         collection.json endpoint.
+
         """
         # Preserve unhydrated fields.
         unhydrated_fields = copy.copy(self.__dict__)
@@ -319,6 +320,7 @@ class Publisher(_Resource):
 
 @dataclass(eq=False)
 class Type(_Resource):
+    """The type of a document (memo, report, etc)."""
     name: str
 
 
@@ -335,6 +337,95 @@ class Classification(_Resource):
 
 @dataclass(eq=False)
 class Document(_MatchableResource, _HydrateableResource, _TimestampedResource):
+    """
+    A DigitalArchive Document. This corresponds to a record page on
+    the digitalarchive.wilsoncenter.org.
+
+    .. note::
+        Avoid constructing Documents directly--use the `match` function to create
+        Documents by keyword search or by ID.
+
+    **Attributes present on all Documents**
+
+    :var str id: The ID# of the record in the DA.
+    :var str title: The title of a document.
+    :var str description: A one-sentence description of the document's content.
+    :var str doc_date: The date of the document's creation in `YYYYMMDD` format.
+    :var str frontend_doc_date: How the date appears when presented on the DA website.
+    :var str slug: A url-friendly name for the document. Not currently used.
+
+    :var source_created_at: When the document was first added to the DA.
+    :vartype source_created_at: :class:`datetime.datetime`
+
+    :var datetime source_updated_at: When the document was last edited.
+    :vartype source_updated_at: :class:`datetime.datetime`
+
+    :var datetime first_published_at: When the document was first made publically accessible.
+    :vartype first_published_at: :class:`datetime.datetime`
+
+    **Attributes present only on hydrated Documents**
+
+    These records are aliases of :class:`UnhydratedField` until :func:`Document.hydrate` is called.
+
+    :var str source: The archive where the document was retrieved from.
+    :var type: The type of the document (meeting minutes, report, etc.)
+    :vartype type: :class:`digitalarchive.models.Type`
+    :var rights: A list of entities controlling the copyright of the Document.
+    :vartype rights: List[:class:`digitalarchive.models.Right`]
+    :var str pdf_generated_at: When combined source, translations, and transcriptions PDF.
+    :var date_range_start: A rounded-down date used to standardize approximate dates for date-range matching.
+    :vartype date_range_start: :class:`datetime.date`
+    :var str sort_string_by_coverage: An alphanumeric used by the API to sort search results.
+    :var main_src: The original Source that a Document was retrieved from.
+    :vartype main_src: :class:`digitalarchive.models.Source`
+    :var str model: The model of a record, used to differentiate collections and keywords in searches.
+
+    **Attributes representing lists of related resources.**
+
+    :var donors: A list of donors whose funding make the acquisiton or translation of a document possible.
+    :vartype donors: List[:class:`digitalarchive.models.Donor`]
+
+    :var subjects: A list of subjects that the document is tagged with.
+    :vartype subjects: List[:class:`digitalarchive.models.Subject`]
+
+    :var transcripts: A list of transcripts of the document's contents.
+    :vartype transcripts: List[:class:`digitalarchive.models.Transcript`]
+
+    :var translations: A list of translations of the original document.
+    :vartype translations: List[:class:`digitalarchive.models.Translation`]
+
+    :var media_files: A list of attached original scans of the document.
+    :vartype media_files: List[:class:`digitalarchive.models.MediaFile`]
+
+    :var languages: A list of langauges contained in the document.
+    :vartype languages: List[:class:`digitalarchive.models.Language`]
+
+    :var creators: A list of persons who authored the document.
+    :vartype creators: List[:class:`digitalarhive.models.Creator`]
+
+    :var original_coverages: A list of geographic locations referenced in the document.
+    :vartype original_coverages: List[:class:`digitalarchive.models.Coverage`]
+
+    :var collections: A list of Collections containing this document.
+    :vartype collections: List[:class:`digitalarchive.models.Collection`]
+
+    :var attachments: A list of Documents that were attached to the Document.
+    :vartype collections: List[:class:`digitalarchive.models.Document`]
+
+    :var links: A list of topically related documents.
+    :vartype links: List[:class:`digitalarchive.models.Document`]
+
+    :var respositories: A list of archives/libraries containing this document.
+    :vartype repositories: List[:class:`digitalarchive.models.Repository`]
+
+    :var publishers: A list of Publishers that released the document.
+    :vartype publishers: List[:class:`digitalarchive.models.Publisher`]
+
+    :var classifications: A list of security classification markers present on the document.
+    :vartype classifications: List[:class:`digitalarchive.models.Publisher`]
+
+
+    """
 
     # pylint: disable=too-many-instance-attributes
 
@@ -449,10 +540,13 @@ class Document(_MatchableResource, _HydrateableResource, _TimestampedResource):
 
     @classmethod
     def match(cls, **kwargs) -> matching.ResourceMatcher:
-        """Custom matcher limits results to correct model.
-        Known search options:
-            * q: a str search term.
+        """
+        Search for a Document by ID or keywords.
 
+        **Matchable attributes**
+        :param str id:
+        :param str title:
+        :param str description:
         """
         kwargs["model"] = "Record"
         return matching.ResourceMatcher(cls, **kwargs)
@@ -461,7 +555,7 @@ class Document(_MatchableResource, _HydrateableResource, _TimestampedResource):
         """
         Hydrates document and subordinate assets.
 
-        :param recurse: If true, also hydrate subordinate records.
+        :param str recurse: If true, also hydrate subordinate and related records.
         todo: See if i can implement the hydration and merge steps using super from _HydrateableResource
         """
         # Preserve unhydrated fields.
