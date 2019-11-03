@@ -527,3 +527,30 @@ class TestMediaFile:
         )
 
         assert media_file.url == "test_path"
+
+class TestCoverage:
+
+    def test_init_no_parent(self):
+        """Check that coverage init convert empty list parents to None"""
+        coverage = models.Coverage(id="1", uri="test", name="test", parent=[])
+        assert coverage.parent is None
+
+    def test_init_parent_parsing(self):
+        test_parent = {"id": "2", "uri": "test_parent_uri", "name":"test_parent_name"}
+        coverage = models.Coverage(id="1", uri='test', name="testname", parent=test_parent)
+
+        # Check that parent was parsed
+        assert isinstance(coverage.parent, models.Coverage)
+        assert coverage.parent.id == test_parent["id"]
+        assert coverage.parent.uri == test_parent["uri"]
+        assert coverage.parent.name == test_parent["name"]
+
+    def test_init_children_parsing(self):
+        test_child = {"id": "2", "uri": "test_child_uri", "name": "test_child_name"}
+        coverage = models.Coverage(id="1", uri='test', name="testname", children=[test_child])
+
+        # Check that children were parsed
+        assert isinstance(coverage.children[0], models.Coverage)
+        assert coverage.children[0].id == test_child["id"]
+        assert coverage.children[0].uri == test_child["uri"]
+        assert coverage.children[0].name == test_child["name"]
