@@ -104,6 +104,7 @@ class TestHydrateableResource:
         assert subject.value == "test_value"
         assert subject.uri == "test_uri"
 
+
 class TestCollection:
     @unittest.mock.patch("digitalarchive.models.matching")
     def test_match(self, mock_matching):
@@ -148,14 +149,62 @@ class TestDocument:
             models.Document, q="Soviet", model="Record"
         )
 
+    @unittest.mock.patch("digitalarchive.models.Document._process_date_searches")
+    @unittest.mock.patch("digitalarchive.models.matching")
+    def test_match_date_search_handling(self, mock_matching, mock_date_helper):
+        # Set up mocks
+        mock_date_helper.return_value = {"start_date": "19890414"}
+
+        # Run a search with a date
+        test = models.Document.match(start_date="19890414")
+
+        # check that date helper was called.
+        mock_date_helper.assert_called_with(
+            {"start_date": "19890414", "model": "Record"}
+        )
+
+    @unittest.mock.patch("digitalarchive.models.matching.ResourceMatcher")
+    def test_match_q_field_construction(self, mock_matching):
+        models.Document.match(description="test_description", title="test_title")
+
+        # Check that 'q' field properly constructed.
+        mock_matching.assert_called_with(
+            models.Document, q="test_title test_description", model="Record"
+        )
+
+    @unittest.mock.patch(
+        "digitalarchive.models.Document._process_related_model_searches"
+    )
+    @unittest.mock.patch("digitalarchive.models.matching.ResourceMatcher")
+    def test_related_model_searches(self, mock_matching, mock_related_model_helper):
+        # Run a match
+        mock_collections = unittest.mock.MagicMock()
+        mock_related_model_helper.return_value = {"collection": mock_collections}
+        models.Document.match(collections=mock_collections)
+
+        # Check related model called with the list
+        mock_related_model_helper.assert_called_with(
+            {"collections": mock_collections, "model": "Record"}
+        )
+
+        # Check that collection field re-named
+
+        # mock_matching.assert_called_with(models.Document, collection[]= mock_collections, model="Record"})
+        assert "collection[]" in mock_matching.call_args[1].keys()
+
     @unittest.mock.patch("digitalarchive.models.api")
     def test_process_date_search_only_end_date(self, mock_api):
         test_date = date(1989, 4, 15)
         mock_api.get_date_range.return_value = {"begin": "19890414"}
-        test_formatted_query = models.Document._process_date_searches({"end_date": test_date})
+        test_formatted_query = models.Document._process_date_searches(
+            {"end_date": test_date}
+        )
 
         # Check that query is properly formed.
-        assert test_formatted_query == {"end_date": "19890415", "start_date": "19890414"}
+        assert test_formatted_query == {
+            "end_date": "19890415",
+            "start_date": "19890414",
+        }
 
     def test_valid_eq(self):
         """Compare a search result doc and a hydrated doc."""
@@ -309,10 +358,7 @@ class TestDocument:
         mock_collection.hydrate.assert_called_once()
 
     def test_parse_child_records(self):
-        test_subject = {
-            "id": "1",
-            "name": "test_subject"
-        }
+        test_subject = {"id": "1", "name": "test_subject"}
         doc = models.Document(
             id=1,
             uri="test",
@@ -325,8 +371,8 @@ class TestDocument:
             source_updated_at="2019-10-26 16:12:00",
             first_published_at="2019-10-26 16:12:00",
             date_range_start="20191026",
-            subjects=[test_subject]
-            )
+            subjects=[test_subject],
+        )
 
         # Check that child records expanded
         assert isinstance(doc.subjects[0], models.Subject)
@@ -347,8 +393,8 @@ class TestDocument:
             source_updated_at="2019-10-26 16:12:00",
             first_published_at="2019-10-26 16:12:00",
             date_range_start="20191026",
-            subjects=[]
-            )
+            subjects=[],
+        )
 
         # Check that our subject field wasn't modified.
         assert isinstance(doc.subjects, list)
@@ -356,12 +402,9 @@ class TestDocument:
         # check that the other child records are still unhydrated.
         assert doc.publishers is models.UnhydratedField
 
-
     def test_process_related_model_searches_languages(self):
         test_language = models.Language(id="1")
-        query = {
-            "languages": [test_language]
-        }
+        query = {"languages": [test_language]}
 
         query = models.Document._process_related_model_searches(query)
 
@@ -528,16 +571,18 @@ class TestMediaFile:
 
         assert media_file.url == "test_path"
 
-class TestCoverage:
 
+class TestCoverage:
     def test_init_no_parent(self):
         """Check that coverage init convert empty list parents to None"""
         coverage = models.Coverage(id="1", uri="test", name="test", parent=[])
         assert coverage.parent is None
 
     def test_init_parent_parsing(self):
-        test_parent = {"id": "2", "uri": "test_parent_uri", "name":"test_parent_name"}
-        coverage = models.Coverage(id="1", uri='test', name="testname", parent=test_parent)
+        test_parent = {"id": "2", "uri": "test_parent_uri", "name": "test_parent_name"}
+        coverage = models.Coverage(
+            id="1", uri="test", name="testname", parent=test_parent
+        )
 
         # Check that parent was parsed
         assert isinstance(coverage.parent, models.Coverage)
@@ -547,10 +592,39 @@ class TestCoverage:
 
     def test_init_children_parsing(self):
         test_child = {"id": "2", "uri": "test_child_uri", "name": "test_child_name"}
-        coverage = models.Coverage(id="1", uri='test', name="testname", children=[test_child])
+        coverage = models.Coverage(
+            id="1", uri="test", name="testname", children=[test_child]
+        )
 
         # Check that children were parsed
         assert isinstance(coverage.children[0], models.Coverage)
         assert coverage.children[0].id == test_child["id"]
         assert coverage.children[0].uri == test_child["uri"]
         assert coverage.children[0].name == test_child["name"]
+
+
+class TestTheme:
+    def test_init_collections(self):
+        test_collection_1 = models.Collection(
+            id="1", name="test_name_1", slug="test_slug_2"
+        )
+        test_collection_2 = {"id": "2", "name": "test_name_2", "slug": "test_slug_2"}
+        test_theme = models.Theme(
+            id="test",
+            slug="test",
+            featured_collections=[test_collection_1, test_collection_2],
+        )
+
+        # Check collection 2 was parsed
+        for collection in test_theme.featured_collections:
+            assert isinstance(collection, models.Collection)
+
+    @unittest.mock.patch("digitalarchive.models.api.get")
+    def test_pull(self, mock_api):
+        """Test that theme.pull uses slug instead of id"""
+        mock_api.return_value = {"id": "test_id", "slug": "test_slug"}
+        test_theme = models.Theme(id="test_id", slug="test_slug")
+        test_theme.pull()
+
+        # Check that api was called with slug
+        mock_api.assert_called_with(endpoint="theme", resource_id="test_slug")
