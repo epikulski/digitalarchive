@@ -384,22 +384,24 @@ class Document(_MatchableResource, _HydrateableResource, _TimestampedResource):
 
     **Attributes present only on hydrated Documents**
 
-    These records are aliases of :class:`UnhydratedField` until :func:`Document.hydrate` is called.
+    These attributes are aliases of :class:`UnhydratedField` until :func:`Document.hydrate` is called.
 
     :var str source: The archive where the document was retrieved from.
     :var type: The type of the document (meeting minutes, report, etc.)
     :vartype type: :class:`digitalarchive.models.Type`
+
     :var rights: A list of entities controlling the copyright of the Document.
     :vartype rights: List[:class:`digitalarchive.models.Right`]
+
     :var str pdf_generated_at: When combined source, translations, and transcriptions PDF.
     :var date_range_start: A rounded-down date used to standardize approximate dates for date-range matching.
     :vartype date_range_start: :class:`datetime.date`
+
     :var str sort_string_by_coverage: An alphanumeric used by the API to sort search results.
     :var main_src: The original Source that a Document was retrieved from.
     :vartype main_src: :class:`digitalarchive.models.Source`
-    :var str model: The model of a record, used to differentiate collections and keywords in searches.
 
-    **Attributes representing lists of related resources.**
+    :var str model: The model of a record, used to differentiate collections and keywords in searches.
 
     :var donors: A list of donors whose funding make the acquisiton or translation of a document possible.
     :vartype donors: List[:class:`digitalarchive.models.Donor`]
@@ -442,7 +444,6 @@ class Document(_MatchableResource, _HydrateableResource, _TimestampedResource):
 
     :var classifications: A list of security classification markers present on the document.
     :vartype classifications: List[:class:`digitalarchive.models.Publisher`]
-
 
     """
 
@@ -511,9 +512,28 @@ class Document(_MatchableResource, _HydrateableResource, _TimestampedResource):
 
     @classmethod
     def match(cls, **kwargs) -> matching.ResourceMatcher:
-        """Custom matcher limits results to correct model.
-        Known search options:
-            * q: a str search term.
+        """
+        Search for a Document by keyword, or fetch one by ID.
+
+        Runs a full-text search for title and description keywords.
+
+        Note:
+            Title and decription keywords are not searched for individually. All
+            non-date or child record searches are converted to sigle querystring.
+
+        Note:
+            Collection and other related record searches use `INNER JOIN` logic when
+            passed multiple related resources.
+
+        **Allowed search fields:**
+        Args:
+            title (:obj:`str`, optional): Title search keywords.
+            description (:obj:`str`, optional): Title search keywords.
+            start_date (:class:`datetime.date`, optional): Return only Documents with a `doc_date` after the passed `start_date`.
+            end_date (:class:`datetime.date`, optional): Return only Documents with a `doc_date` before the passed `end_date`.
+            collections (list(:class:`digitalarchive.models.Collection`, optional): Restrict results to Documents contained in all of the passed Collections.
+            publishers (list(:class:`digitalarchive.models.Publisher`, optional): Restrict results to Documents published by all of the passed Publishers.
+            repositories (list(:class:`digitalarchive.models.Repository`, optional) Restrict results to Documents contained in all of the passed Repositories.
 
         """
         # Limit search to only Documents (this excludes Collections from search result).
