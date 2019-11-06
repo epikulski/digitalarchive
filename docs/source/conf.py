@@ -32,7 +32,8 @@ release = '0.1.5'
 # ones.
 extensions = [
     'sphinx.ext.autodoc',
-    'sphinx.ext.intersphinx'
+    'sphinx.ext.intersphinx',
+    'sphinx.ext.napoleon'
 ]
 
 intersphinx_mapping = {'python': ('https://docs.python.org/3', None)}

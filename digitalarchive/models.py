@@ -355,74 +355,55 @@ class Classification(_Resource):
 @dataclass(eq=False)
 class Document(_MatchableResource, _HydrateableResource, _TimestampedResource):
     """
-    A DigitalArchive Document. This corresponds to a record page on
-    the digitalarchive.wilsoncenter.org.
+    A Document corresponding to a single record page on  digitalarchive.wilsoncenter.org.
 
-    .. note::
+    Note:
         Avoid constructing Documents directly--use the `match` function to create
         Documents by keyword search or by ID.
 
 
-    **Attributes present on all Documents**
+    **Attributes present on all Documents:**
 
-    :var str id: The ID# of the record in the DA.
-    :var str title: The title of a document.
-    :var str description: A one-sentence description of the document's content.
-    :var str doc_date: The date of the document's creation in `YYYYMMDD` format.
-    :var str frontend_doc_date: How the date appears when presented on the DA website.
-    :var str slug: A url-friendly name for the document. Not currently used.
-
-    :var source_created_at: When the document was first added to the DA.
-    :vartype source_created_at: :class:`datetime.datetime`
-
-    :var datetime source_updated_at: When the document was last edited.
-    :vartype source_updated_at: :class:`datetime.datetime`
-
-    :var datetime first_published_at: When the document was first made publically accessible.
-    :vartype first_published_at: :class:`datetime.datetime`
-
+    Attributes:
+        id (str): The ID# of the record in the DA.
+        title (str): The title of a document.
+        description (str): A one-sentence description of the document's content.
+        doc_date (str): The date of the document's creation in `YYYYMMDD` format.
+        frontend_doc_date (str): How the date appears when presented on the DA website.
+        slug (str): A url-friendly name for the document. Not currently used.
+        source_created_at(:class:`datetime.datetime`): Timestamp of when the Document was first added to the DA.
+        source_updated_at(:class:`datetime.datetime`): Timestamp of when the Document was last edited.
+        first_published_at(:class:`datetime.datetime`): Timestamp of when the document was first made publically
+            accessible.
 
     **Attributes present only on hydrated Documents**
 
-    These attributes are aliases of :class:`UnhydratedField` until :func:`Document.hydrate` is called.
+    These attributes are aliases of :class:`UnhydratedField` until :func:`Document.hydrate` is called on .
 
-    :var str source: The archive where the document was retrieved from.
-    :var type: The type of the document (meeting minutes, report, etc.)
-    :vartype type: :class:`digitalarchive.models.Type`
-
-    :var rights: A list of entities controlling the copyright of the Document.
-    :vartype rights: List[:class:`digitalarchive.models.Right`]
-
-    :var str pdf_generated_at: When combined source, translations, and transcriptions PDF.
-    :var date_range_start: A rounded-down date used to standardize approximate dates for date-range matching.
-    :vartype date_range_start: :class:`datetime.date`
-
-    :var str sort_string_by_coverage: An alphanumeric used by the API to sort search results.
-    :var main_src: The original Source that a Document was retrieved from.
-    :vartype main_src: :class:`digitalarchive.models.Source`
-
-    :var str model: The model of a record, used to differentiate collections and keywords in searches.
-
-    :var donors: A list of donors whose funding make the acquisiton or translation of a document possible.
-    :vartype donors: List[:class:`digitalarchive.models.Donor`]
-
-    :var subjects: A list of subjects that the document is tagged with.
-    :vartype subjects: List[:class:`digitalarchive.models.Subject`]
-
-    :var transcripts: A list of transcripts of the document's contents.
-    :vartype transcripts: List[:class:`digitalarchive.models.Transcript`]
-
-    :var translations: A list of translations of the original document.
-    :vartype translations: List[:class:`digitalarchive.models.Translation`]
-
-    :var media_files: A list of attached original scans of the document.
-    :vartype media_files: List[:class:`digitalarchive.models.MediaFile`]
-
-    :var languages: A list of langauges contained in the document.
-    :vartype languages: List[:class:`digitalarchive.models.Language`]
-
-    :var creators: A list of persons who authored the document.
-    :vartype creators: List[:class:`digitalarhive.models.Creator`]
+    Attributes:
+        source (str): The archive where the document was retrieved from.
+        type (:class:`digitalarchive.models.Type`): The type of the document (meeting minutes, report, etc.)
+        rights (:obj:`list` of :class:`digitalarchive.models.Right`): A list of entities holding the copyright of the
+            Document.
+        pdf_generated_at (str): The date that the  combined source, translations, and transcriptions PDF. was generated.
+        date_range_start (:class:`datetime.date`): A rounded-down date used to standardize approximate dates for
+            date-range matching.
+        sort_string_by_coverage (str): An alphanumeric used by the API to sort search results.
+        main_src (:class:`digitalarchive.models.Source`): The original Source that a Document was retrieved from.
+        model (str): The model of a record, used to differentiate collections and keywords in searches.
+        donors (:obj:`list` of :class:`digitalarchive.models.Donor`): A list of donors whose funding make the acquisiton
+            or translation of a document possible.
+        subjects (:obj:`list` of :class:`digitalarchive.models.Subject`): A list of subjects that the document is tagged
+            with.
+        transcripts (:obj:`list` of :class:`digitalarchive.models.Transcript`): A list of transcripts of the document's
+            contents.
+        translations (:obj:`list` of :class:`digitalarchive.models.Translation`): A list of translations of the original
+            document.
+        media_files (:obj:`list` of :class:`digitalarchive.models.MediaFile`): A list of attached original scans of the
+            document.
+        languages(:obj:`list` of  :class:`digitalarchive.models.Language`): A list of langauges contained in the
+            document.
+        creators (:obj:`list` of :class:`digitalarhive.models.Creator`): A list of persons who authored the document.
 
     :var original_coverages: A list of geographic locations referenced in the document.
     :vartype original_coverages: List[:class:`digitalarchive.models.Coverage`]
@@ -518,23 +499,44 @@ class Document(_MatchableResource, _HydrateableResource, _TimestampedResource):
         Runs a full-text search for title and description keywords.
 
         Note:
-            Title and decription keywords are not searched for individually. All
-            non-date or child record searches are converted to sigle querystring.
+            Title and description keywords are not searched for individually. All
+            non-date or child record searches are converted to single querystring.
 
         Note:
             Collection and other related record searches use `INNER JOIN` logic when
             passed multiple related resources.
 
         **Allowed search fields:**
+
         Args:
             title (:obj:`str`, optional): Title search keywords.
             description (:obj:`str`, optional): Title search keywords.
-            start_date (:class:`datetime.date`, optional): Return only Documents with a `doc_date` after the passed `start_date`.
-            end_date (:class:`datetime.date`, optional): Return only Documents with a `doc_date` before the passed `end_date`.
-            collections (list(:class:`digitalarchive.models.Collection`, optional): Restrict results to Documents contained in all of the passed Collections.
-            publishers (list(:class:`digitalarchive.models.Publisher`, optional): Restrict results to Documents published by all of the passed Publishers.
-            repositories (list(:class:`digitalarchive.models.Repository`, optional) Restrict results to Documents contained in all of the passed Repositories.
+            start_date (:class:`datetime.date`, optional): Return only Documents with a `doc_date` after the passed
+                `start_date`.
+            end_date (:class:`datetime.date`, optional): Return only Documents with a `doc_date` before the passed
+                `end_date`.
+            collections (list(:class:`digitalarchive.models.Collection`, optional): Restrict results to Documents
+                contained in all of the passed Collections.
+            publishers (list(:class:`digitalarchive.models.Publisher`, optional): Restrict results to Documents
+                published by all of the passed Publishers.
+            repositories (list(:class:`digitalarchive.models.Repository`, optional) Restrict results to Documents
+                contained in all of the passed Repositories.
+            coverages (list(:class:`digitalarchive.models.Coverage`, optional)) Restrict results to Documents relating
+                to all of the passed geographical Coverages.
+            subjects (list(:class:`digitalarchive.models.Subject`)) Restrict results to Documents tagged with all of 
+                the passed subjects
+            contributors (list(:class:`digitalarchive.models.Contributor`)) Restrict results to Documents whose authors
+                include all of the passed contributors.
+            donors (list(:class:`digitalarchive.models.Donor`)) Restrict results to Documents who were obtained or
+                translated with support from all of the passed donors.
+            language (:class:`digitalarchive.models.Language`) Restrict results to Documents by original language.
+            translation (:class:`digitalarchive.models.Translation`) Restrict results to Documents for which there
+                is a translation available in the passed Language.
+            theme (:class:`digitalarchive.models.Theme`) Restrict results to Documents belonging to the passed Theme.
 
+        Returns:
+            An instance of (:class:`digitalarchive.matching.ResourceMatcher`) containing any records responsive to the
+                search.
         """
         # Limit search to only Documents (this excludes Collections from search result).
         kwargs["model"] = "Record"
