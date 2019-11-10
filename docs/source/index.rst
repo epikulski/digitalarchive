@@ -24,12 +24,12 @@ To install the latest stable version of **digitalarchive**, simply use pip_::
 
 Usage
 -----
-
+Find documents by keyword:
     >>> import digitalarchive
     >>> digitalarchive.Subject.match(name="Tiananmen Square Incident").first()
     Subject(id='2229', name='China--History--Tiananmen Square Incident, 1989', uri='/srv/subject/2229.json', value='China--History--Tiananmen Square Incident, 1989', endpoint='subject')
 
-
+Discover collections of related documents:
     >>> collection = digitalarchive.Collection.match(name="Local Nationalism in Xinjiang").first()
     >>> docs = digitalarchive.Document.match(collections=[collection])
     >>> for doc in docs.all():
