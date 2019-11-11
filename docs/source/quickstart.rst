@@ -30,9 +30,15 @@ The match method always returns an instance of :class:`digitalarchive.matching.R
 exposes a :meth:`~digitalarchive.matching.ResourceMatcher.first()` method for to accessing a single document and an
 :meth:`~digitalarchive.matching.ResourceMatcher.all()` for accessing a list of all respondant records.
 
+    >>> from digitalarchive import Document
+    >>> docs = Document.match(description="Cuban Missile Crisis")
+    >>> docs.first()
+    Document(id='177859', title="From the Journal of S.M. Kudryavtsev, 'Record of a Conversation with Prime Minister of Cuba Fidel Castro Ruz, 21 January 1961'")
+    >>> len(docs.all())
+    656
+
 Searching for a record by its ID always returns a single record and ignores any other keyword arguments.
 
-Example:
     >>>  from digitalarchive import Document
     >>> test_search = Document.match(id="175898")
     >>> test_search.count
@@ -44,7 +50,6 @@ Example:
 
 Filtering Searches
 ------------------
-
 One can limit searches to records created between specific dates by passing a `start_date` keyword, an `end_date`
 keyword, or both.
 
@@ -81,15 +86,17 @@ download the full metadata for a resource.
     'AVPRF f. 0100, op. 34, 1946, p. 253, d. 18. Obtained and translated for CWIHP by Austin Jersild.'
 
 It is also possible to hydrate all of the contents of a search result using the
-:meth:`~digitalarchive.matching.ResourceMatcher.hydrate()` method of :class:`~digitalarchive.matching.ResourceMatcher`:
+:meth:`~digitalarchive.matching.ResourceMatcher.hydrate()` method of :class:`~digitalarchive.matching.ResourceMatcher`.
+This operation can take some time for large result sets.
 
     >>> from digitalarchive import Document
     >>> docs = Document.match(description="Taiwan Strait Crisis")
     >>> docs.hydrate()
     >>> docs.list[0].source
 
-When hydrating a result set, it it is also possible to recursively hydrate any child records in the result set by
-setting the ``recurse`` paramter of :meth:`~digitalarchive.matching.ResourceMatcher.hydrate()` to ``True``.
+When hydrating a result set, it it is also possible to recursively hydrate any child records (translations, transcripts,
+etc.) in the result set by setting the ``recurse`` paramter of
+:meth:`~digitalarchive.matching.ResourceMatcher.hydrate()` to ``True``.
 
     >>> from digitalarchive import Document
     >>> docs = Document.match(description="Taiwan Strait Crisis")
