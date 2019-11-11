@@ -59,13 +59,5 @@ Contents
    cookbook
    api
 
-Indices and tables
-------------------
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
-
-
 .. _Wilson Center's Digital Archive: https://digitalarchive.wilsoncenter.org/
 .. _pip: https://pip.pypa.io/
