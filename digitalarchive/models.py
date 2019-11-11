@@ -419,7 +419,7 @@ class Document(_MatchableResource, _HydrateableResource, _TimestampedResource):
         date_range_start (:class:`datetime.date`): A rounded-down date used to standardize approximate dates for
             date-range matching.
         sort_string_by_coverage (str): An alphanumeric identifier used by the API to sort search results.
-        main_src (:class:`digitalarchive.models.Source`): The original Source that a Document was retrieved from.
+        main_src (str): The original Source that a Document was retrieved from.
         model (str): The model of a record, used to differentiate collections and keywords in searches.
         donors (:obj:`list` of :class:`digitalarchive.models.Donor`): A list of donors whose funding make the acquisiton
             or translation of a document possible.
