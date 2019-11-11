@@ -13,7 +13,16 @@ import digitalarchive.exceptions as exceptions
 
 
 class ResourceMatcher:
-    """Wraps instances of models.Resource to provide search functionality. """
+    """
+    A wrapper for search results.
+
+    ResourceMatcher wraps search results and exposes methods for intereacting with a result set.
+
+    Attributes:
+        list(:obj:`Generator` of :class:`digitalarchive.models._MatchableResource`) A Generator returning individual search results. Handles pagination of the DA API.
+        count: The number of respondant records to the given search.
+
+    """
 
     # pylint: disable=protected-access
 
@@ -92,11 +101,11 @@ class ResourceMatcher:
             page += 1
 
     def first(self) -> models._MatchableResource:
-        """Return only the first record from a SearchResult."""
+        """Return only the first record from a search result."""
         return next(self.list)
 
     def all(self) -> Generator[models._MatchableResource, None, None]:
-        """Return all records from a SearchResult."""
+        """Return all results from a search."""
         return self.list
 
     def hydrate(self, recurse: bool = False):
