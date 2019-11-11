@@ -47,7 +47,11 @@ class _MatchableResource(_Resource):
 
     @classmethod
     def match(cls, **kwargs) -> matching.ResourceMatcher:
-        """Find a record based on passed kwargs. Returns all if none passed"""
+        """Find a resource using passed keyword arguments.
+
+        Note:
+            Returns all records in the DA if no keywords are passed.
+        """
 
         # Check that we no invalid search terms were passed.
         for key in kwargs:
@@ -73,17 +77,13 @@ class _HydrateableResource(_Resource):
     """Abstract class for Resources that can be accessed and hydrated individually."""
 
     def pull(self):
-        """Update a given record using data from the remote DA."""
+        """Update the resource using data from the DA API."""
         data = api.get(endpoint=self.endpoint, resource_id=self.id)
         self.__init__(**data)
 
     def hydrate(self):
         """
-        Download the complete version of a given document.
-
-        Note: Some models expose inconsistent fields between
-        search results and when it is accessed directly via the
-        collection.json endpoint.
+        Download the complete version of the resource.
         """
         # Preserve unhydrated fields.
         unhydrated_fields = copy.copy(self.__dict__)
@@ -121,12 +121,20 @@ class _TimestampedResource(_Resource):
 
 @dataclass(eq=False)
 class Subject(_MatchableResource, _HydrateableResource):
-    """A historical topic that a Document relates to."""
+    """
+    A historical topic that documents can be related to.
+
+    Attributes:
+        id (str): The ID of the record.
+        name (str): The name of the subject.
+        value (str): An alias for :attr:`~digitalarchive.models.Subject.name`.
+        uri (str): The URI for the Subject in the API.
+    """
     name: str
 
     # Optional fields
-    uri: Union[str, UnhydratedField] = UnhydratedField
     value: Union[str, UnhydratedField] = UnhydratedField
+    uri: Union[str, UnhydratedField] = UnhydratedField
 
     # Private fields
     endpoint: str = "subject"
@@ -134,6 +142,13 @@ class Subject(_MatchableResource, _HydrateableResource):
 
 @dataclass(eq=False)
 class Language(_Resource):
+    """
+    The original language of a resource.
+
+    Attributes:
+        id (str): An ISO 639-2/B language code.
+        name (str): The ISO language name for the language.
+    """
     name: Union[str, UnhydratedField] = UnhydratedField
 
 
@@ -142,8 +157,9 @@ class _Asset(_HydrateableResource):
     """
     Abstract class representing fpr Translations, Transcriptions, and MediaFiles.
 
-    Note: We don't define raw, html, or pdf here because they are not present on
-    the stub version of Assets.
+    Note:
+        We don't define raw, html, or pdf here because they are not present on
+        the stub version of Assets.
     """
 
     # pylint: disable=too-many-instance-attributes
@@ -171,6 +187,7 @@ class _Asset(_HydrateableResource):
         self.html = UnhydratedField
 
     def hydrate(self):
+        """Download the complete version of an Asset."""
         response = api.SESSION.get(
             f"https://digitalarchive.wilsoncenter.org/{self.url}"
         )
@@ -201,11 +218,19 @@ class _Asset(_HydrateableResource):
 
 @dataclass(eq=False)
 class Transcript(_Asset):
-    """A transcript of a document in its original language."""
+    """A transcript of a document in its original language.
+
+    Attributes:
+          id (str): The ID# of the Transcript.
+          url (str): A URL to accessing the hydrated Transcript.
+          html (str): The html of of the Transcript.
+          pdf (bytes): A bytes object of the Transcript content.
+          raw (str or bytes): The raw content recieved from the DA API for the Transcript.
+    """
     url: str
     html: Union[str, UnhydratedField] = UnhydratedField
-    pdf: Union[str, UnhydratedField] = UnhydratedField
-    raw: Union[str, UnhydratedField] = UnhydratedField
+    pdf: Union[bytes, UnhydratedField] = UnhydratedField
+    raw: Union[str, bytes, UnhydratedField] = UnhydratedField
 
     def __post_init__(self):
         """See note on _Asset __post_init__ function."""
@@ -398,7 +423,7 @@ class Document(_MatchableResource, _HydrateableResource, _TimestampedResource):
         id (str): The ID# of the record in the DA.
         title (str): The title of a document.
         description (str): A one-sentence description of the document's content.
-        doc_date (str): The date of the document's creation in `YYYYMMDD` format.
+        doc_date (str): The date of the document's creation in ``YYYYMMDD`` format.
         frontend_doc_date (str): How the date appears when presented on the DA website.
         slug (str): A url-friendly name for the document. Not currently used.
         source_created_at(:class:`datetime.datetime`): Timestamp of when the Document was first added to the DA.

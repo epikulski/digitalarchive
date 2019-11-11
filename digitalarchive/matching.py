@@ -14,7 +14,7 @@ import digitalarchive.exceptions as exceptions
 
 class ResourceMatcher:
     """
-    Wrapper for search results
+    A wrapper for search results.
 
     ResourceMatcher wraps search results and exposes methods for intereacting with a result set.
 
@@ -101,11 +101,11 @@ class ResourceMatcher:
             page += 1
 
     def first(self) -> models._MatchableResource:
-        """Return only the first record from a SearchResult."""
+        """Return only the first record from a search result."""
         return next(self.list)
 
     def all(self) -> Generator[models._MatchableResource, None, None]:
-        """Return all records from a SearchResult."""
+        """Return all results from a search."""
         return self.list
 
     def hydrate(self, recurse: bool = False):
