@@ -160,6 +160,8 @@ class _Asset(_HydrateableResource):
     Note:
         We don't define raw, html, or pdf here because they are not present on
         the stub version of Assets.
+
+
     """
 
     # pylint: disable=too-many-instance-attributes
@@ -224,8 +226,14 @@ class Transcript(_Asset):
           id (str): The ID# of the Transcript.
           url (str): A URL to accessing the hydrated Transcript.
           html (str): The html of of the Transcript.
-          pdf (bytes): A bytes object of the Transcript content.
+          pdf (bytes): A bytes object of the Transcript pdf content.
           raw (str or bytes): The raw content recieved from the DA API for the Transcript.
+          filename (str): The filename of the Transcript on the content server.
+          content_type (str): The MIME type of the Transcript file.
+          extension (str): The file extension of the Transcript.
+          asset_id (str): The Transcript's unique ID on the content server.
+          source_created_at (str): ISO 8601 timestamp of the first time the Translation was published.
+          source_updated_at (str): ISO 8601 timestamp of the last time the Translation was modified.
     """
     url: str
     html: Union[str, UnhydratedField] = UnhydratedField
@@ -239,11 +247,26 @@ class Transcript(_Asset):
 
 @dataclass(eq=False)
 class Translation(_Asset):
-    """A translation of a Document."""
+    """
+    A translation of a Document.
+
+    Attributes:
+        id (str): The ID# of the Translation.
+        language (:class:`digitalarchive.models.Language`) The langauge of the Translation.
+        html (str): The HTML-formatted text of the Translation.
+        pdf (bytes): A bytes object of the Translation pdf content.
+        raw (str or bytes): The raw content recieved from the DA API for the Translation.
+        filename (str): The filename of the Translation on the content server.
+        content_type (str): The MIME type of the Translation file.
+        extension (str): The file extension of the Translation.
+        asset_id (str): The Translation's unique ID on the content server.
+        source_created_at (str): ISO 8601 timestamp of the first time the Translation was published.
+        source_updated_at (str): ISO 8601 timestamp of the last time the Translation was modified.
+    """
     url: str
     language: Union[Language, dict]
-    html: Union[str, UnhydratedField] = UnhydratedField
-    pdf: Union[str, UnhydratedField] = UnhydratedField
+    html: Union[str, UnhydratedField, None] = UnhydratedField
+    pdf: Union[bytes, UnhydratedField, None] = UnhydratedField
     raw: Union[str, UnhydratedField] = UnhydratedField
 
     def __post_init__(self):
@@ -252,10 +275,22 @@ class Translation(_Asset):
 
 @dataclass(eq=False)
 class MediaFile(_Asset):
-    """An scan of an Original document."""
+    """
+    An original scan of a Document.
+
+    Attributes:
+        id (str): The ID# of the MediaFile.
+        pdf (bytes): A bytes object of the MediaFile content.
+        raw (str or bytes): The raw content received from the DA API for the MediaFile.
+        filename (str): The filename of the MediaFile on the content server.
+        content_type (str): The MIME type of the MediaFile file.
+        extension (str): The file extension of the MediaFile.
+        asset_id (str): The MediaFile's unique ID on the content server.
+        source_created_at (str): ISO 8601 timestamp of the first time the MediaFile was published.
+        source_updated_at (str): ISO 8601 timestamp of the last time the MediaFile was modified.
+    """
     path: str
     raw: Union[str, UnhydratedField] = UnhydratedField
-    html: Union[str, UnhydratedField] = UnhydratedField
     pdf: Union[str, UnhydratedField] = UnhydratedField
 
     def __post_init__(self):
@@ -264,7 +299,14 @@ class MediaFile(_Asset):
 
 @dataclass(eq=False)
 class Contributor(_MatchableResource, _HydrateableResource):
-    """An individual person or organization that contributed to the creation of the document."""
+    """
+    An individual person or organization that contributed to the creation of the document.
+
+    Attributes:
+        id (str): The ID# of the Contributor.
+        name (str): The name of the contributor.
+        uri (str): The URI of the contributor metadata on the DA API.
+    """
     name: str
     value: Union[UnhydratedField, str] = UnhydratedField
     uri: Union[UnhydratedField, str] = UnhydratedField
@@ -273,7 +315,13 @@ class Contributor(_MatchableResource, _HydrateableResource):
 
 @dataclass(eq=False)
 class Donor(_Resource):
-    """A funding organization who provided resources that enabled the publication or translation of a document."""
+    """
+    A funding organization who provided resources that enabled the publication or translation of a document.
+
+    Attributes:
+        id (str): The ID# of the Donor.
+        name (str): The name of the Donor.
+    """
     name: str
     endpoint: str = "donor"
 
@@ -283,14 +331,20 @@ class Coverage(_MatchableResource, _HydrateableResource):
     """
     A geopgraphical area referenced by a Document.
 
-    todo: instances of "any" below should be models.Coverage.
+    Attributes:
+        id (str): The ID# of the geographic Coverage.
+        name (str): The name of geographic coverage area.
+        value (str): An alias to :attr:`~digitalarchive.models.Coverage.name`.
+        uri (str): URI to the Coverage's metadata on the DA API.
+        parent (:class:`~digitalarchive.models.Coverage`): The parent coverage, if any
+        children: (list of :class:`~digitalarchive.models.Covereage`): Subordinate geographical areas, if any.
     """
 
-    uri: str
     name: str
+    uri: str
     value: Union[str, UnhydratedField] = UnhydratedField
     parent: Union[Any, UnhydratedField, None] = UnhydratedField
-    children: Union[Any, UnhydratedField] = UnhydratedField
+    children: Union[list, UnhydratedField] = UnhydratedField
     endpoint: str = "coverage"
 
     def __post_init__(self):
@@ -339,8 +393,6 @@ class Collection(_MatchableResource, _HydrateableResource, _TimestampedResource)
         source_updated_at(:class:`datetime.datetime`): Timestamp of when the Document was last edited.
         first_published_at(:class:`datetime.datetime`): Timestamp of when the document was first made publically
             accessible.
-
-
     """
     # pylint: disable=too-many-instance-attributes
     # Required Fields
@@ -375,6 +427,15 @@ class Collection(_MatchableResource, _HydrateableResource, _TimestampedResource)
 
 @dataclass(eq=False)
 class Repository(_MatchableResource, _HydrateableResource):
+    """
+    The archive or library holding the original Document.
+
+    Attributes:
+        id (str): The ID# of the Repository.
+        name (str): The name of the repository
+        uri (str): The URI for the Repository's metadata on the Digital Archive API.
+        value (str): An alias to :attr:`~digitalarchive.models.Repository.name`
+    """
     name: str
     uri: Union[str, UnhydratedField] = UnhydratedField
     value: Union[str, UnhydratedField] = UnhydratedField
@@ -383,7 +444,13 @@ class Repository(_MatchableResource, _HydrateableResource):
 
 @dataclass(eq=False)
 class Publisher(_Resource):
-    """An organization involved in the Publication of the document. """
+    """
+    An organization involved in the Publication of the document.
+
+    Attributes:
+        id (str): The ID# of the Publisher.
+        name (str): The name of the Publisher.
+    """
     name: str
     value: str
     endpoint: str = "publisher"
@@ -391,19 +458,39 @@ class Publisher(_Resource):
 
 @dataclass(eq=False)
 class Type(_Resource):
-    """The type of a document (memo, report, etc)."""
+    """
+    The type of a document (memo, report, etc).
+
+    Attributes:
+        id (str): The ID# of the Type.
+        name (str): The name of the resource Type.
+    """
     name: str
 
 
 @dataclass(eq=False)
 class Right(_Resource):
-    """A copyright notice for a Document."""
+    """
+    A copyright notice for a Document.
+
+    Attributes:
+        id (str): The ID# of the Copyright type.
+        name (str): The name of the Copyright type.
+        rights (str): A description of the copyright requirements.
+    """
     name: str
     rights: str
 
 
 @dataclass(eq=False)
 class Classification(_Resource):
+    """
+    A classification marking applied to the original document.
+
+    Attributes:
+        id (str): The ID# of the Classification type.
+        name (str): A description of the Classification type.
+    """
     name: str
 
 
@@ -804,7 +891,19 @@ class Theme(_HydrateableResource):
     """
     A parent container for collections on a single geopolitical topic.
 
-    Themes never appear on any record model, but can be passed as a search param to Document."""
+    Themes never appear on any record model, but can be passed as a search param to Document.
+
+    Attributes:
+        id (str): The ID# of the Theme.
+        slug (str): A url-friendly version of the theme title.
+        title (str): The name of the Theme.
+        description (str): A short description of the Theme contents.
+        main_src: A URI for the Theme's banner image on the Digital Archive website.
+        has_map (str): A boolean value for whether the Theme has an accompanying map on the Digital Archive website.
+        has_timeline(str) : A boolean value for whether the Theme has a Timeline on the Digital Archive website.
+        featured_collections (list of :class:`~digitalarchive.models.Collection`): A list of related collections.
+        dates_with_events (list): A list of date ranges that the Theme has timeline entries for.
+    """
 
     # Required fields
     slug: str
