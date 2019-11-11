@@ -2,14 +2,11 @@
 
 # Standard Library
 from __future__ import annotations
-import logging
-from typing import Generator
-from datetime import date
+from typing import Generator, List
 
 # Application modules
 import digitalarchive.api as api
 import digitalarchive.models as models
-import digitalarchive.exceptions as exceptions
 
 
 class ResourceMatcher:
