@@ -13,7 +13,16 @@ import digitalarchive.exceptions as exceptions
 
 
 class ResourceMatcher:
-    """Wraps instances of models.Resource to provide search functionality. """
+    """
+    Wrapper for search results
+
+    ResourceMatcher wraps search results and exposes methods for intereacting with a result set.
+
+    Attributes:
+        list(:obj:`Generator` of :class:`digitalarchive.models._MatchableResource`) A Generator returning individual search results. Handles pagination of the DA API.
+        count: The number of respondant records to the given search.
+
+    """
 
     # pylint: disable=protected-access
 

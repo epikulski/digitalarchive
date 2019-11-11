@@ -6,6 +6,7 @@ Examples of common operations encountered using the Digital Archive client.
 Search for a resource by keyword
 --------------------------------
 Run a keyword search across the title, description, and document content.
+
     >>> from digitalarchive import Document
     >>> # Find a document
     >>> results = Document.match(description="Cuban Missile Crisis")
@@ -18,6 +19,7 @@ Run a keyword search across the title, description, and document content.
 Filter a search by a related record
 -----------------------------------
 Search for a collection and then find documents contanied in that collection:
+
     >>> from digitalarchive import Document, Collection
     >>> # Find an interesting collection:
     >>> xinjiang_collection = Collection.match(name="xinjiang").first()
