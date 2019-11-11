@@ -113,6 +113,26 @@ class TestResourceMatcher:
         assert len(results) == 2
 
     @unittest.mock.patch("digitalarchive.api.search")
+    def test_all_then_first(self, mock_search):
+        """Verify that calling first on a ResourceMatcher that has already been called with .all() doesn't fail."""
+        # Set up mock response.
+        mock_search.return_value = {
+            "pagination": {"totalItems": 2},
+            "list": [{"id": 1, "name": "test1"}, {"id": 2, "name": "test2"}],
+        }
+
+        # Run a search and try pulling records.
+        results = matching.ResourceMatcher(models.Contributor, items_per_page=10)
+        all_results = results.all()
+        first_result = results.first()
+
+        # Check expected results.
+        for result in all_results:
+            assert isinstance(result, models.Contributor)
+
+        assert isinstance(first_result, models.Contributor)
+
+    @unittest.mock.patch("digitalarchive.api.search")
     def test_get_all_search_results(self, mock_search):
         # Set up mock response.
         results_page_1 = {
@@ -158,11 +178,12 @@ class TestResourceMatcher:
             "list": [unittest.mock.MagicMock(), unittest.mock.MagicMock()],
         }
 
-        test_match = matching.ResourceMatcher(models.Subject, name="test_name", items_per_page=1)
+        test_match = matching.ResourceMatcher(
+            models.Subject, name="test_name", items_per_page=1
+        )
 
         # Confirm the list attribute is properly generated.
         try:
             test_list = test_match.list
         except AttributeError:
             self.fail()
-

@@ -2,14 +2,11 @@
 
 # Standard Library
 from __future__ import annotations
-import logging
-from typing import Generator
-from datetime import date
+from typing import Generator, List
 
 # Application modules
 import digitalarchive.api as api
 import digitalarchive.models as models
-import digitalarchive.exceptions as exceptions
 
 
 class ResourceMatcher:
@@ -32,6 +29,7 @@ class ResourceMatcher:
         """
         Wrapper for search and query related functions.
         :param resource_model: A DA model object from digitalarchive.models
+        :param items_per_age: The number of search hits to include on each page of results.
         :param kwargs: Search keywords to match on.
         """
         self.model = resource_model
@@ -102,11 +100,16 @@ class ResourceMatcher:
 
     def first(self) -> models._MatchableResource:
         """Return only the first record from a search result."""
-        return next(self.list)
+        if isinstance(self.list, Generator):
+            return next(self.list)
+        elif isinstance(self.list, list):
+            return self.list[0]
 
-    def all(self) -> Generator[models._MatchableResource, None, None]:
+    def all(self) -> List[models._MatchableResource]:
         """Return all results from a search."""
-        return self.list
+        records = list(self.list)
+        self.list = records
+        return records
 
     def hydrate(self, recurse: bool = False):
         """Hydrate all of the Resources in a resultset."""
