@@ -18,7 +18,7 @@ Features
 
 Installation
 ------------
-To install the latest stable version of **digitalarchive**, simply use pip_::
+Install the latest stable version of ``digitalarchive`` using pip_::
 
     $ python3 -m pip install digitalarchive
 
@@ -45,13 +45,16 @@ Discover collections of related documents:
     M. Zimianin to the Central Committee of the CPSU and to Comrade Iu. V. Andropov, 'On Manifestations of Local Nationalism in Xinjiang (PRC)'
     M. Zimianin to the Department of the Central Committee of the CPSU and to Comrade Iu. V. Andropov
 
+Read the :doc:`quickstart` guide for a tutorial on working with documents and searches, or consult the :doc:`cookbook` for examples of
+common operations.
+
 Contents
 --------
 .. toctree::
    :maxdepth: 2
 
    quickstart
-   cookbooks
+   cookbook
    api
 
 Indices and tables
