@@ -2,7 +2,7 @@
 Quickstart
 **********
 
-The `Document` is the basic unit of content in the Digital Archive. Every document is accompanied by metadata, including
+The ``Document`` is the basic unit of content in the Digital Archive. Every document is accompanied by metadata, including
 a short description of its content, information about the archive it was obtained, subjects it is tagged with,
 alongside other information.
 
@@ -10,7 +10,7 @@ Most of the Digital Archive's documents originate from outside the United States
 documents, as well as original scans in some cases. The :class:`~digitalarchive.models.Document` model describes the available
 methods and attributes for documents.
 
-The `digitalarchive` package also provides models for other kinds of Digital Archive resources, such as
+The ``digitalarchive`` package also provides models for other kinds of resources, such as
 :class:`~digitalarchive.models.Subject`, :class:`~digitalarchive.models.Collection`,
 :class:`~digitalarchive.models.Theme`, :class:`~digitalarchive.models.Coverage`, and
 :class:`~digitalarchive.models.Repository`. These models can be used as filters when searching for
@@ -18,17 +18,16 @@ documents. Consult the :doc:`api` documentation for a full description of availa
 
 Searching
 ---------
-The `Document`, `Contributor`, `Coverage`, `Collection`, `Subject`, and `Repository`, models each expose a
-:meth:`~digitalarchive.models.Document.match()` method that can be used to search for documents. The method accepts a list of keyword arguments corresponding to the
-attributes of the matched for model.
+The ``Document``, ``Contributor``, ``Coverage``, ``Collection``, ``Subject``, and ``Repository``, models each expose a
+:meth:`~digitalarchive.models.Document.match()` method that can be used to search for documents. The method accepts a
+list of keyword arguments corresponding to the attributes of the matched for model.
 
-Example:
     >>> from digitalarchive import Document
     >>> docs = Document.match(description="Cuban Missile Crisis")
 
 The match method always returns an instance of :class:`digitalarchive.matching.ResourceMatcher`.  ResourceMatcher
 exposes a :meth:`~digitalarchive.matching.ResourceMatcher.first()` method for to accessing a single document and an
-:meth:`~digitalarchive.matching.ResourceMatcher.all()` for accessing a list of all respondant records.
+:meth:`~digitalarchive.matching.ResourceMatcher.all()` for accessing a list of all respondent records.
 
     >>> from digitalarchive import Document
     >>> docs = Document.match(description="Cuban Missile Crisis")
@@ -37,7 +36,7 @@ exposes a :meth:`~digitalarchive.matching.ResourceMatcher.first()` method for to
     >>> len(docs.all())
     656
 
-Searching for a record by its ID always returns a single record and ignores any other keyword arguments.
+Searching for a record by its ``id`` always returns a single record and ignores any other keyword arguments.
 
     >>>  from digitalarchive import Document
     >>> test_search = Document.match(id="175898")
@@ -50,7 +49,7 @@ Searching for a record by its ID always returns a single record and ignores any 
 
 Filtering Searches
 ------------------
-One can limit searches to records created between specific dates by passing a `start_date` keyword, an `end_date`
+One can limit searches to records created between specific dates by passing a ``start_date`` keyword, an ``end_date``
 keyword, or both.
 
     >>> from digitalarchive import Document
@@ -59,8 +58,8 @@ keyword, or both.
     ResourceMatcher(model=<class 'digitalarchive.models.Document'>, query={'start_date': '19890415', 'end_date': '19890504', 'model': 'Record', 'itemsPerPage': 200, 'q': ''}, count=15)
 
 Searches can also be limited to records contained within a specific collection, subject, or other container. Matches for
-Documents can be filtered by one or more `Collection`, `Repository`, `Coverage`, `Subject`, `Contributor`, and `Donor`
-instances:
+Documents can be filtered by one or more ``Collection``, ``Repository``, ``Coverage``, ``Subject``, ``Contributor``,
+and ``Donor`` instances:
 
     >>> from digitalarchive import Collection, Document
     >>> xinjiang_collection = Collection.match(id="491").first()
@@ -74,8 +73,8 @@ Hydrating Search Results
 ------------------------
 
 Most search results return "unhydrated" instances of resources with incomplete metadata. All attributes that are not yet
-available are replaced with an alias of :class:`~digitalarchive.models.UnhydratedField`. Use the :meth:`~digitalarchive.models.Document.hydrate()` method to
-download the full metadata for a resource.
+available are represented by an alias of :class:`~digitalarchive.models.UnhydratedField`. Use the
+:meth:`~digitalarchive.models.Document.hydrate()` method to download the full metadata for a resource.
 
     >>> from digitalarchive import Document
     >>> test_doc = Document.match(description="Vietnam War").first()
@@ -95,7 +94,7 @@ This operation can take some time for large result sets.
     >>> docs.list[0].source
 
 When hydrating a result set, it it is also possible to recursively hydrate any child records (translations, transcripts,
-etc.) in the result set by setting the ``recurse`` paramter of
+etc.) in the result set by setting the ``recurse`` parameter of
 :meth:`~digitalarchive.matching.ResourceMatcher.hydrate()` to ``True``.
 
     >>> from digitalarchive import Document
