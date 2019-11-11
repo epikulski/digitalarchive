@@ -41,6 +41,8 @@ Usage
 >>> all_documents = digitalarchive.Document.match().all()
 ```
 
+Complete documentation for the client and the Digital Archive's models are available [here](https://digitalarchive.readthedocs.io/en/latest/).
+
 Disclaimers
 -----------
 * This is an unofficial library. I am not presently affiliated with the Wilson Center. I understandthat the API is unlikely to change in the near future, but I cannot guarantee that this library won't break without warning. 
