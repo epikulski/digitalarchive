@@ -78,6 +78,11 @@ class TestDocument:
         for transcript in record.transcripts:
             assert isinstance(transcript, digitalarchive.models.Transcript)
 
+        for type in record.type:
+            assert isinstance(type, digitalarchive.models.Type)
+
+        assert isinstance(record.rights, digitalarchive.models.Right)
+
     def test_hydrate_recursive(self):
         record: digitalarchive.Document = digitalarchive.Document.match(
             id="121894"
