@@ -663,7 +663,8 @@ class Document(_MatchableResource, _HydrateableResource, _TimestampedResource):
                 authors include all of the passed contributors.
             donors (list(:class:`digitalarchive.models.Donor`)) Restrict results to Documents who were obtained or
                 translated with support from all of the passed donors.
-            language (:class:`digitalarchive.models.Language`) Restrict results to Documents by original language.
+            languages (:class:`digitalarchive.models.Language` or str) Restrict results to Documents by language of
+                original document. If passing a string, you must pass an ISO 639-2/B language code.
             translation (:class:`digitalarchive.models.Translation`) Restrict results to Documents for which there
                 is a translation available in the passed Language.
             theme (:class:`digitalarchive.models.Theme`) Restrict results to Documents belonging to the passed Theme.
@@ -692,6 +693,10 @@ class Document(_MatchableResource, _HydrateableResource, _TimestampedResource):
         # Process date searches if they are present.
         if any(key in kwargs.keys() for key in ["start_date", "end_date"]):
             kwargs = Document._process_date_searches(kwargs)
+
+        # Process language searches if they are present.
+        if "languages" in kwargs.keys():
+            kwargs = Document._process_language_search(kwargs)
 
         # Process any related model searches.
         if any(
@@ -885,6 +890,35 @@ class Document(_MatchableResource, _HydrateableResource, _TimestampedResource):
         # Return the reformatted query.
         return query
 
+    @staticmethod
+    def _process_language_search(query: dict) -> dict:
+        """
+        Process a language search
+
+        Looks up the DA's language ID# for user provided ISO 639-2/B language codes and updates the query.
+
+        Args:
+            query (dict): A ResourceMatcher query.
+
+        Returns:
+            dict: A query dict with a ISO 639-2/B string replaced with appropriate Language object.
+        """
+        parsed_languages = []
+        for language in query["languages"]:
+            # Check if ID# is instance of language, bail on yes.
+            if isinstance(language, Language):
+                parsed_languages.append(language)
+
+            # If str, lookup ID# of language
+            elif isinstance(language, str) and len(language) == 3:
+                parsed_languages.append(Language(id=language))
+
+            else:
+                raise exceptions.MalformedLanguageSearch
+
+            # Replace kwarg with Langauge object.
+            query["languages"] = parsed_languages
+            return query
 
 @dataclass(eq=False)
 class Theme(_HydrateableResource):

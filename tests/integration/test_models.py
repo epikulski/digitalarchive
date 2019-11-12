@@ -255,6 +255,12 @@ class TestDocument:
         for doc in docs.all():
             assert language in doc.languages
 
+    def test_search_by_language_by_iso_code(self):
+        all_docs = digitalarchive.Document.match()
+        german_docs = digitalarchive.Document.match(languages=["ger"])
+        assert german_docs.count > 0
+        assert german_docs.count < all_docs.count
+
     def test_search_by_translation(self):
         language = digitalarchive.models.Language(id="chi")
         docs = digitalarchive.Document.match(translations=[language])
