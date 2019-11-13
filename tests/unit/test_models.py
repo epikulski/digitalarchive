@@ -192,6 +192,10 @@ class TestDocument:
         # mock_matching.assert_called_with(models.Document, collection[]= mock_collections, model="Record"})
         assert "collection[]" in mock_matching.call_args[1].keys()
 
+    def test_invalid_language_search(self):
+        with pytest.raises(exceptions.MalformedLanguageSearch):
+            models.Document.match(languages=["invalid"])
+
     @unittest.mock.patch("digitalarchive.models.api")
     def test_process_date_search_only_end_date(self, mock_api):
         test_date = date(1989, 4, 15)
