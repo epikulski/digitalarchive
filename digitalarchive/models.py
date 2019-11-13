@@ -777,11 +777,22 @@ class Document(_MatchableResource, _HydrateableResource, _TimestampedResource):
             "repositories": Repository,
             "classifications": Classification,
             "donors": Donor,
+            "type": Type,
+            "rights": Right
         }
 
         # If we are dealing with an unhydrated record, don't attempt to process child records.
         for field in child_fields:
             if self.__getattribute__(field) is UnhydratedField:
+                continue
+
+            # If we are dealing with a dict, parse it and update self.
+            elif isinstance(self.__getattribute__(field), dict):
+                parsed_resource = child_fields[field](**self.__getattribute__(field))
+                setattr(self, field, parsed_resource)
+
+            # Rights are the only field that isn't a list, so we have special handling here to bail out of loop.
+            elif isinstance(self.__getattribute__(field), Right):
                 continue
 
             # # If record is hydrated, transform child records to appropriate model.
