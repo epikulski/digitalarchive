@@ -1,4 +1,8 @@
-"""Principal class for interacting with the DigitalArchive."""
+"""
+digitalarchive.api
+
+This module contains functions for requesting data from the DigitalArchive API.
+"""
 
 # Standard Library
 import logging
@@ -61,6 +65,7 @@ def get(endpoint: str, resource_id: str) -> dict:
 
 
 def get_date_range() -> dict:
+    """Get the earliest and latest possible document dates for the DigitalArchive."""
     url = "https://digitalarchive.wilsoncenter.org/srv/record/date_range.json"
     response = SESSION.get(url)
     return response.json()

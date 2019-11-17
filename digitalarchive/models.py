@@ -1,6 +1,8 @@
-"""ORM Models for all DigitalArchive resource types."""
-# pylint: disable=missing-class-docstring
+"""
+digitalarchive.models
 
+The module provides documented models and an ORM for interacting with the DA API.
+"""
 from __future__ import annotations
 
 # Standard Library
@@ -17,16 +19,17 @@ import digitalarchive.exceptions as exceptions
 
 
 class UnhydratedField:
-    """A field whose content is unknown until the given `Resource` has been hydrated."""
+    """A field whose content is unknown until its parent :class:`_Resource` has been hydrated."""
+
     pass
 
 
 @dataclass(eq=False)
 class _Resource:
     """
-    Abstract parent class for all DigitalArchive objects.
+    Abstract parent for all DigitalArchive objects.
 
-    We add custom hash and eq fields so hydrated and unhydrated records are equal.
+    We add custom hash and eq fields so that hydrated and unhydrated records are equal.
     """
 
     id: str
@@ -43,14 +46,14 @@ class _Resource:
 
 @dataclass(eq=False)
 class _MatchableResource(_Resource):
-    """Abstract class for Resources that can be searched against."""
+    """Abstract parent for Resources that can be searched against."""
 
     @classmethod
     def match(cls, **kwargs) -> matching.ResourceMatcher:
         """Find a resource using passed keyword arguments.
 
         Note:
-            Returns all records in the DA if no keywords are passed.
+            If called without arguments, returns all records in the DA .
         """
 
         # Check that we no invalid search terms were passed.
@@ -74,7 +77,7 @@ class _MatchableResource(_Resource):
 
 @dataclass(eq=False)
 class _HydrateableResource(_Resource):
-    """Abstract class for Resources that can be accessed and hydrated individually."""
+    """Abstract parent for resources that can be individually accessed and hydrated."""
 
     def pull(self):
         """Update the resource using data from the DA API."""
@@ -83,7 +86,7 @@ class _HydrateableResource(_Resource):
 
     def hydrate(self):
         """
-        Download the complete version of the resource.
+        Populate all unhydrated fields of a resource.
         """
         # Preserve unhydrated fields.
         unhydrated_fields = copy.copy(self.__dict__)
@@ -102,6 +105,8 @@ class _HydrateableResource(_Resource):
 
 
 class _TimestampedResource(_Resource):
+    """Abstract parent for resources that have publication timestamp metadata."""
+
     # pylint: disable=too-few-public-methods
 
     def _process_timestamps(self):
@@ -122,7 +127,7 @@ class _TimestampedResource(_Resource):
 @dataclass(eq=False)
 class Subject(_MatchableResource, _HydrateableResource):
     """
-    A historical topic that documents can be related to.
+    A historical topic to which documents can be related.
 
     Attributes:
         id (str): The ID of the record.
@@ -130,6 +135,7 @@ class Subject(_MatchableResource, _HydrateableResource):
         value (str): An alias for :attr:`~digitalarchive.models.Subject.name`.
         uri (str): The URI for the Subject in the API.
     """
+
     name: str
 
     # Optional fields
@@ -149,19 +155,18 @@ class Language(_Resource):
         id (str): An ISO 639-2/B language code.
         name (str): The ISO language name for the language.
     """
+
     name: Union[str, UnhydratedField] = UnhydratedField
 
 
 @dataclass(eq=False)
 class _Asset(_HydrateableResource):
     """
-    Abstract class representing fpr Translations, Transcriptions, and MediaFiles.
+    Abstract parent for Translations, Transcriptions, and MediaFiles.
 
     Note:
         We don't define raw, html, or pdf here because they are not present on
         the stub version of Assets.
-
-
     """
 
     # pylint: disable=too-many-instance-attributes
@@ -175,10 +180,9 @@ class _Asset(_HydrateableResource):
 
     def __post_init__(self):
         """
-        Instantiate some required fields for child classes.
+        Instantiate some required fields for child assets.
 
-
-        Note: This is awkward but necessary because dataclasses don't let
+        This is awkward but necessary because dataclasses don't let
         you have non-default arguments in a child class. However,
         the MediaFile record type has a 'path' field instead of a 'url' field,
         which makes inheritance of a shared hydrate method awkward.
@@ -189,7 +193,7 @@ class _Asset(_HydrateableResource):
         self.html = UnhydratedField
 
     def hydrate(self):
-        """Download the complete version of an Asset."""
+        """Populate all unhydrated fields of a :class:`digitalarchive.models._Asset`."""
         response = api.SESSION.get(
             f"https://digitalarchive.wilsoncenter.org/{self.url}"
         )
@@ -235,6 +239,7 @@ class Transcript(_Asset):
           source_created_at (str): ISO 8601 timestamp of the first time the Translation was published.
           source_updated_at (str): ISO 8601 timestamp of the last time the Translation was modified.
     """
+
     url: str
     html: Union[str, UnhydratedField] = UnhydratedField
     pdf: Union[bytes, UnhydratedField] = UnhydratedField
@@ -248,7 +253,7 @@ class Transcript(_Asset):
 @dataclass(eq=False)
 class Translation(_Asset):
     """
-    A translation of a Document.
+    A translation of a Document into a another language.
 
     Attributes:
         id (str): The ID# of the Translation.
@@ -263,6 +268,7 @@ class Translation(_Asset):
         source_created_at (str): ISO 8601 timestamp of the first time the Translation was published.
         source_updated_at (str): ISO 8601 timestamp of the last time the Translation was modified.
     """
+
     url: str
     language: Union[Language, dict]
     html: Union[str, UnhydratedField, None] = UnhydratedField
@@ -289,6 +295,7 @@ class MediaFile(_Asset):
         source_created_at (str): ISO 8601 timestamp of the first time the MediaFile was published.
         source_updated_at (str): ISO 8601 timestamp of the last time the MediaFile was modified.
     """
+
     path: str
     raw: Union[str, UnhydratedField] = UnhydratedField
     pdf: Union[str, UnhydratedField] = UnhydratedField
@@ -302,11 +309,15 @@ class Contributor(_MatchableResource, _HydrateableResource):
     """
     An individual person or organization that contributed to the creation of the document.
 
+    Contributors are typically the Document's author, but for meeting minutes and similar documents,
+    a Contributor may simply be somebody who was in attendance at the meeting.
+
     Attributes:
         id (str): The ID# of the Contributor.
         name (str): The name of the contributor.
         uri (str): The URI of the contributor metadata on the DA API.
     """
+
     name: str
     value: Union[UnhydratedField, str] = UnhydratedField
     uri: Union[UnhydratedField, str] = UnhydratedField
@@ -316,12 +327,13 @@ class Contributor(_MatchableResource, _HydrateableResource):
 @dataclass(eq=False)
 class Donor(_Resource):
     """
-    A funding organization who provided resources that enabled the publication or translation of a document.
+    An entity whose resources helped publish or translate a document.
 
     Attributes:
         id (str): The ID# of the Donor.
         name (str): The name of the Donor.
     """
+
     name: str
     endpoint: str = "donor"
 
@@ -329,15 +341,17 @@ class Donor(_Resource):
 @dataclass(eq=False)
 class Coverage(_MatchableResource, _HydrateableResource):
     """
-    A geopgraphical area referenced by a Document.
+    A geographical area referenced by a Document.
 
     Attributes:
         id (str): The ID# of the geographic Coverage.
         name (str): The name of geographic coverage area.
         value (str): An alias to :attr:`~digitalarchive.models.Coverage.name`.
         uri (str): URI to the Coverage's metadata on the DA API.
-        parent (:class:`~digitalarchive.models.Coverage`): The parent coverage, if any
-        children: (list of :class:`~digitalarchive.models.Covereage`): Subordinate geographical areas, if any.
+        parent (:class:`~digitalarchive.models.Coverage`): The parent coverage,
+            if any
+        children: (list of :class:`~digitalarchive.models.Covereage`):
+            Subordinate geographical areas, if any.
     """
 
     name: str
@@ -349,10 +363,10 @@ class Coverage(_MatchableResource, _HydrateableResource):
 
     def __post_init__(self):
         """
+        Standardize output of coverage data across differnet DA endpoints.
 
-        DA returns dicts for parent in some cases, empty lists in others. Standardize on None.
-
-        We also parse the children and parent fields, if they are present.
+        The DA returns dicts for parent in some cases, empty lists in others. We standardize on None. We also parse the
+        children and parent fields, if they are present.
         """
         if isinstance(self.parent, list):
             self.parent = None
@@ -394,6 +408,7 @@ class Collection(_MatchableResource, _HydrateableResource, _TimestampedResource)
         first_published_at(:class:`datetime.datetime`): Timestamp of when the document was first made publically
             accessible.
     """
+
     # pylint: disable=too-many-instance-attributes
     # Required Fields
     name: str
@@ -428,7 +443,7 @@ class Collection(_MatchableResource, _HydrateableResource, _TimestampedResource)
 @dataclass(eq=False)
 class Repository(_MatchableResource, _HydrateableResource):
     """
-    The archive or library holding the original Document.
+    The archive or library possessing the original, physical Document.
 
     Attributes:
         id (str): The ID# of the Repository.
@@ -436,6 +451,7 @@ class Repository(_MatchableResource, _HydrateableResource):
         uri (str): The URI for the Repository's metadata on the Digital Archive API.
         value (str): An alias to :attr:`~digitalarchive.models.Repository.name`
     """
+
     name: str
     uri: Union[str, UnhydratedField] = UnhydratedField
     value: Union[str, UnhydratedField] = UnhydratedField
@@ -445,12 +461,13 @@ class Repository(_MatchableResource, _HydrateableResource):
 @dataclass(eq=False)
 class Publisher(_Resource):
     """
-    An organization involved in the Publication of the document.
+    An organization involved in the publication of the document.
 
     Attributes:
         id (str): The ID# of the Publisher.
         name (str): The name of the Publisher.
     """
+
     name: str
     value: str
     endpoint: str = "publisher"
@@ -465,19 +482,21 @@ class Type(_Resource):
         id (str): The ID# of the Type.
         name (str): The name of the resource Type.
     """
+
     name: str
 
 
 @dataclass(eq=False)
 class Right(_Resource):
     """
-    A copyright notice for a Document.
+    A copyright notice attached to the Document.
 
     Attributes:
         id (str): The ID# of the Copyright type.
         name (str): The name of the Copyright type.
         rights (str): A description of the copyright requirements.
     """
+
     name: str
     rights: str
 
@@ -485,19 +504,20 @@ class Right(_Resource):
 @dataclass(eq=False)
 class Classification(_Resource):
     """
-    A classification marking applied to the original document.
+    A classification marking applied to the original Document.
 
     Attributes:
         id (str): The ID# of the Classification type.
         name (str): A description of the Classification type.
     """
+
     name: str
 
 
 @dataclass(eq=False)
 class Document(_MatchableResource, _HydrateableResource, _TimestampedResource):
     """
-    A Document corresponding to a single record page on  digitalarchive.wilsoncenter.org.
+    A Document corresponding to a single record page on digitalarchive.wilsoncenter.org.
 
     Note:
         Avoid constructing Documents directly--use the `match` function to create
@@ -612,7 +632,7 @@ class Document(_MatchableResource, _HydrateableResource, _TimestampedResource):
     endpoint: str = "record"
 
     def __post_init__(self):
-        """Process lists of subordinate classes."""
+        """Parse lists of child objects."""
 
         # Parse related records
         self._parse_child_records()
@@ -629,7 +649,7 @@ class Document(_MatchableResource, _HydrateableResource, _TimestampedResource):
         """
         Search for a Document by keyword, or fetch one by ID.
 
-        Matching on the Document model runs  a full-text search using keywords passed via the  title and description
+        Matching on the Document model runs a full-text search using keywords passed via the  title and description
         keywords. Results can also be limited by dates or by related records, as described below.
 
         Note:
@@ -778,7 +798,7 @@ class Document(_MatchableResource, _HydrateableResource, _TimestampedResource):
             "classifications": Classification,
             "donors": Donor,
             "type": Type,
-            "rights": Right
+            "rights": Right,
         }
 
         # If we are dealing with an unhydrated record, don't attempt to process child records.
@@ -931,12 +951,14 @@ class Document(_MatchableResource, _HydrateableResource, _TimestampedResource):
             query["languages"] = parsed_languages
             return query
 
+
 @dataclass(eq=False)
 class Theme(_HydrateableResource):
     """
     A parent container for collections on a single geopolitical topic.
 
-    Themes never appear on any record model, but can be passed as a search param to Document.
+    Note:
+        Themes never appear on any record model, but can be passed as a search param to Document.
 
     Attributes:
         id (str): The ID# of the Theme.
