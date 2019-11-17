@@ -1,19 +1,25 @@
-"""Custom Exceptions."""
+"""
+digitalarchive.exceptions
+
+This module contains custom exceptions for the `digitalarchive` library.
+"""
 
 
 class InvalidSearchFieldError(Exception):
-    """User attempted to search on a field not valid for a given model."""
+    """User attempted to search on a field that is not valid valid for the given model."""
+
 
 class MalformedDateSearch(InvalidSearchFieldError):
-    """User passed a improperly formatted date. Required format: 'YYYYMMDD'"""
+    """User passed a improperly formatted date to a Document search. Expected format: 'YYYYMMDD'"""
 
 
 class NoSuchResourceError(Exception):
-    """User attempted to retrieve a resource by ID#, but no such Resource exists"""
+    """User attempted to retrieve a DA resource by ID#, but no such resource existed"""
 
 
 class APIServerError(Exception):
-    """DA API returned a non-200 code for attempted operation."""
+    """ The DA API returned a non-200 code for the attempted operation."""
+
 
 class MalformedLanguageSearch(InvalidSearchFieldError):
-    """User passed a langauge search term that was not an instance of models.Language or an ISO 639-2/B string."""
+    """Language search terms must be instance of models.Language or ISO 639-2/B string."""
