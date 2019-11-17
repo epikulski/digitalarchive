@@ -6,9 +6,13 @@ from __future__ import annotations
 # Standard Library
 import logging
 import copy
+import asyncio
 from datetime import datetime, date
 from dataclasses import dataclass
 from typing import List, Any, Optional, Union
+
+# 3rd Party Libraries
+import aiohttp
 
 # Application Modules
 import digitalarchive.matching as matching
@@ -78,18 +82,29 @@ class _HydrateableResource(_Resource):
 
     def pull(self):
         """Update the resource using data from the DA API."""
-        data = api.get(endpoint=self.endpoint, resource_id=self.id)
-        self.__init__(**data)
+        asyncio.run(self._async_pull())
 
     def hydrate(self):
         """
         Download the complete version of the resource.
+
+        Handles the aio loop on behalf of the library user.
         """
+        # Set up a async loop and hydrate the record.
+        asyncio.run(self._async_hydrate())
+
+    async def _async_pull(self, session: aiohttp.ClientSession = None):
+        """Asynchronously pull and update a record."""
+        data = await api.get(endpoint=self.endpoint, resource_id=self.id, session=session)
+        self.__init__(**data)
+
+    async def _async_hydrate(self, session: aiohttp.ClientSession = None, recurse: bool = False):
+        """Download the complete version of the resource."""
         # Preserve unhydrated fields.
         unhydrated_fields = copy.copy(self.__dict__)
 
         # Hydrate
-        self.pull()
+        await self._async_pull(session=session)
         hydrated_fields = vars(self)
 
         # Merge fields
@@ -99,6 +114,7 @@ class _HydrateableResource(_Resource):
 
         # Re-initialize the object.
         self.__init__(**hydrated_fields)
+
 
 
 class _TimestampedResource(_Resource):
@@ -189,34 +205,33 @@ class _Asset(_HydrateableResource):
         self.html = UnhydratedField
 
     def hydrate(self):
+        """
+        Download the complete version of an Asset.
+
+        Handles the aio loop on behalf of the user so that they can send singleton requests.
+        """
+        asyncio.run(self._async_hydrate())
+
+
+    async def _async_hydrate(self, session: aiohttp.ClientSession = None, recurse: bool = False):
         """Download the complete version of an Asset."""
-        response = api.SESSION.get(
-            f"https://digitalarchive.wilsoncenter.org/{self.url}"
-        )
+        response_content = await api.get_asset(f"https://digitalarchive.wilsoncenter.org/{self.url}", session=session)
 
-        if response.status_code == 200:
-            # Preserve the raw content from the DA in any case.
-            self.raw = response.content
+        # Preserve the raw content from the DA in any case.
+        self.raw = response_content
 
-            # Add add helper attributes for the common filetypes.
-            if self.extension == "html":
-                self.html = response.text
-                self.pdf = None
-            elif self.extension == "pdf":
-                self.pdf = response.content
-                self.html = None
-            else:
-                logging.warning(
-                    "[!] Unknown file format '%s' encountered!", self.extension
-                )
+        # Add add helper attributes for the common filetypes.
+        if self.extension == "html":
+            self.html = self.raw = response_content.decode()
+            self.pdf = None
 
+        elif self.extension == "pdf":
+            self.pdf = response_content
+            self.html = None
         else:
-            raise exceptions.APIServerError(
-                f"[!] Hydrating asset ID#: %s failed with code: %s",
-                self.id,
-                response.status_code,
+            logging.warning(
+                "[!] Unknown file format '%s' encountered!", self.extension
             )
-
 
 @dataclass(eq=False)
 class Transcript(_Asset):
@@ -738,11 +753,22 @@ class Document(_MatchableResource, _HydrateableResource, _TimestampedResource):
         Args:
             recurse (bool): If true, also hydrate subordinate and related records records.
         """
+        asyncio.run(self._async_hydrate(recurse=recurse))
+
+    async def _async_hydrate(self, recurse: bool = False, session: aiohttp.ClientSession = None):
+        """
+        Downloads the complete version of the Document with metadata for any related objects.
+
+        todo: revisit gather logic to make sure it will work properly with any parent event loops.
+        """
         # Preserve unhydrated fields.
         unhydrated_fields = copy.copy(self.__dict__)
 
         # Hydrate
-        self.pull()
+        # Beause recursive hydrating docs requires many connections, we create its own session.
+        if recurse is True and session is None:
+            session = aiohttp.ClientSession()
+        await self._async_pull(session=session)
         hydrated_fields = vars(self)
 
         # Merge fields
@@ -755,10 +781,12 @@ class Document(_MatchableResource, _HydrateableResource, _TimestampedResource):
 
         # Hydrate Assets
         if recurse is True:
-            [transcript.hydrate() for transcript in self.transcripts]
-            [translation.hydrate() for translation in self.translations]
-            [media_file.hydrate() for media_file in self.media_files]
-            [collection.hydrate() for collection in self.collections]
+            await asyncio.gather(
+                *[transcript._async_hydrate(session=session) for transcript in self.transcripts],
+                *[translation._async_hydrate(session=session) for translation in self.translations],
+                *[media_file._async_hydrate(session=session) for media_file in self.media_files],
+                *[collection._async_hydrate(session=session) for collection in self.collections]
+            )
 
     def _parse_child_records(self):
         child_fields = {
@@ -987,5 +1015,11 @@ class Theme(_HydrateableResource):
         Note: The Theme pull method differs from from the pull methods of other models as Themes use the `slug`
         attribute as a primary key, rather than the `id` attribute.
         """
-        data = api.get(endpoint=self.endpoint, resource_id=self.slug)
+        asyncio.run(self._async_pull())
+
+    async def _async_pull(self, session: aiohttp.ClientSession = None):
+        """
+        Downloads the complete Theme object from the DA and re-initializes the dataclass.
+        """
+        data = await api.get(endpoint=self.endpoint, resource_id=self.slug, session=session)
         self.__init__(**data)

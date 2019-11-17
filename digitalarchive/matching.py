@@ -2,7 +2,11 @@
 
 # Standard Library
 from __future__ import annotations
+import asyncio
 from typing import Generator, List
+
+# 3rd Party Libraries
+import aiohttp
 
 # Application modules
 import digitalarchive.api as api
@@ -47,7 +51,7 @@ class ResourceMatcher:
         else:
             # Fetch the first page of records from the API.
             self.query["itemsPerPage"] = items_per_page
-            response = api.search(model=self.model.endpoint, params=self.query)
+            response = asyncio.run(api.search(model=self.model.endpoint, params=self.query))
 
             # Calculate pagination, with handling depending on model type.
             if self.model in [
@@ -77,8 +81,8 @@ class ResourceMatcher:
 
     def _record_by_id(self) -> dict:
         """Get a single record by ID."""
-        response = api.get(
-            endpoint=self.model.endpoint, resource_id=self.query.get("id")
+        response = asyncio.run(
+            api.get(endpoint=self.model.endpoint, resource_id=self.query.get("id"))
         )
         # Wrap the response for SearchResult
         return {"list": [response]}
@@ -90,7 +94,7 @@ class ResourceMatcher:
         while page <= response["pagination"]["totalPages"]:
             # Yield resources in the current request.
             self.query["page"] = page
-            response = api.search(model=self.model.endpoint, params=self.query)
+            response = asyncio.run(api.search(model=self.model.endpoint, params=self.query))
             resources = [self.model(**item) for item in response["list"]]
             for resource in resources:
                 yield resource
@@ -115,10 +119,13 @@ class ResourceMatcher:
         """Hydrate all of the Resources in a resultset."""
         # Fetch all the records.
         self.list = list(self.list)
+        asyncio.run(self._async_hydrate(recurse=recurse))
 
-        # Hydrate all the records.
-        for resource in self.list:
-            if isinstance(resource, models.Document):
-                resource.hydrate(recurse=recurse)
-            else:
-                resource.hydrate()
+    async def _async_hydrate(self, recurse: bool):
+        session = aiohttp.ClientSession()
+        await asyncio.gather(
+            *[
+                resource._async_hydrate(session=session, recurse=recurse)
+                for resource in self.list
+            ]
+        )

@@ -2,10 +2,12 @@
 
 # Standard Library
 import logging
+import asyncio
 from typing import Optional, Dict
 
 # 3rd Party Libraries
 import requests
+import aiohttp
 
 # Library modules
 import digitalarchive.exceptions as exceptions
@@ -14,7 +16,7 @@ import digitalarchive.exceptions as exceptions
 SESSION = requests.session()
 
 
-def search(model: str, params: Optional[Dict] = None) -> dict:
+async def search(model: str, params: Optional[Dict] = None, session: aiohttp.ClientSession = None) -> dict:
     """
     Search for DA records by endpoint and term.
 
@@ -26,38 +28,75 @@ def search(model: str, params: Optional[Dict] = None) -> dict:
     # avoid mutable default arguments.
     if params is None:
         params = {}
+    if session is None:
+        session = aiohttp.ClientSession()
 
     # Send Query.
     logging.debug("[*] Querying %s API endpoint with params: %s", model, str(params))
     url = f"https://digitalarchive.wilsoncenter.org/srv/{model}.json"
-    response = SESSION.get(url, params=params)
 
-    # Bail out if non-200 response.
-    if response.status_code != 200:
-        raise exceptions.NoSuchResourceError(
-            "[!] Search failed for resource type %s with terms %s" % (model, params)
-        )
+    response = await session.get(url, params=params)
 
-    # Return response body.
-    return response.json()
+    async with response:
+        # Bail out if non-200 response.
+        if response.status != 200:
+            raise exceptions.NoSuchResourceError(
+                "[!] Search failed for resource type %s with terms %s" % (model, params)
+            )
+
+        # Return response body.
+        return await response.json()
 
 
-def get(endpoint: str, resource_id: str) -> dict:
-    """Retrieve a single record from the DA."""
+async def get(endpoint: str, resource_id: str, session: aiohttp.ClientSession = None) -> dict:
+    """Retrieve a single record from the DA.
+
+    todo: add logic to cleanup session if we created it for this request.
+    """
+
+    # Create an aiohttp session if we need one.
+    if session is None:
+        session = aiohttp.ClientSession()
+
     url = f"https://digitalarchive.wilsoncenter.org/srv/{endpoint}/{resource_id}.json"
     logging.debug(
         "[*] Querying %s API endpoint for resource id: %s", endpoint, resource_id
     )
-    response = SESSION.get(url)
 
-    # Bail out if non-200 code.
-    if response.status_code != 200:
-        raise exceptions.NoSuchResourceError(
-            "[!] Failed to find resource type %s at ID: %s" % (endpoint, resource_id)
-        )
+    response = await session.get(url)
+    async with response:
+        if response.status != 200:
+            raise exceptions.NoSuchResourceError(
+                "[!] Failed to find resource type %s at ID: %s" % (endpoint, resource_id)
+            )
+        else:
+            return await response.json()
 
-    # Return response body.
-    return response.json()
+
+async def get_asset(url, session: aiohttp.ClientSession = None) -> bytes:
+    """
+    Retrieve a single asset from the DA API.
+
+    Assets (Translations, Transcripts, Media Files) have a different endpoint than other records and
+    don't return JSON, so we have different handling here.
+
+    todo: add logic to cleanup session if we created it for this request.
+    """
+    # Create an aiohttp session if we need one.
+    if session is None:
+        session = aiohttp.ClientSession()
+
+    # Send our request.
+    response = await session.get(url)
+    async with response:
+        if response.status == 200:
+            return await response.read()
+        else:
+            raise exceptions.APIServerError(
+                f"[!] Hydrating asset at %s: %s failed with code: %s",
+                url,
+                response.status,
+            )
 
 
 def get_date_range() -> dict:
