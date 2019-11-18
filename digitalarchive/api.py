@@ -8,6 +8,7 @@ from typing import Optional, Dict
 # 3rd Party Libraries
 import requests
 import aiohttp
+import multidict
 
 # Library modules
 import digitalarchive.exceptions as exceptions
@@ -16,7 +17,7 @@ import digitalarchive.exceptions as exceptions
 SESSION = requests.session()
 
 
-async def search(model: str, params: Optional[Dict] = None, session: aiohttp.ClientSession = None) -> dict:
+async def search(model: str, params: Optional[multidict.MultiDict] = None, session: aiohttp.ClientSession = None) -> dict:
     """
     Search for DA records by endpoint and term.
 

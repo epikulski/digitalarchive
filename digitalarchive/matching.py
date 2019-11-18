@@ -3,7 +3,6 @@
 # Standard Library
 from __future__ import annotations
 import asyncio
-from typing import Generator, List
 
 # 3rd Party Libraries
 import aiohttp
@@ -39,14 +38,18 @@ class ResourceMatcher:
         """
         self.model = resource_model
         self.query = query
-        self.list: Generator[models._Resource, None, None]
+
+        # Set up typing for attributes populated after the search.
+        self.list: list
         self.count: int
+        self.current_page: int
+        self.total_pages: int
 
         # if this is a request for a single record by ID, return only the record
         if self.query.get("id"):
             response = self._record_by_id()
             self.count = 1
-            self.list = (self.model(**item) for item in response["list"])
+            self.list = [self.model(**item) for item in response["list"]]
 
         # If no resource_id present, treat as a search.
         else:
@@ -62,20 +65,16 @@ class ResourceMatcher:
                 models.Coverage,
             ]:
                 self.count = len(response["list"])
+                self.current_page = 1
+                self.total_pages = 1
+
             else:
                 self.count = response["pagination"]["totalItems"]
+                self.current_page = response["pagination"]["page"]
+                self.total_pages = response["pagination"]["totalPages"]
 
-            # If first page contains all results, set list
-            if self.count <= self.query["itemsPerPage"]:
-                self.list = (self.model(**item) for item in response["list"])
-
-            # If model is subject, skip pagination as the endpoint doesn't do it.
-            elif self.model is models.Subject:
-                self.list = (self.model(**item) for item in response["list"])
-
-            # Set up generator to serve remaining results.
-            else:
-                self.list = self._get_all_search_results(response)
+            # Set list to first page of results.
+            self.list = [self.model(**item) for item in response["list"]]
 
     def __repr__(self):
         return f"ResourceMatcher(model={self.model}, query={self.query}, count={self.count})"
@@ -88,33 +87,46 @@ class ResourceMatcher:
         # Wrap the response for SearchResult
         return {"list": [response]}
 
-    def _get_all_search_results(self, response) -> models._MatchableResource:
-        """Create Generator to handle search result pagination."""
-        page = response["pagination"]["page"]
+    async def _get_all_search_results(self):
+        # Calculate the queries we will need to send.
+        session = aiohttp.ClientSession()
+        pages = range(self.current_page, (self.total_pages + 1))
+        queries = []
+        for page in pages:
+            query = self.query.copy()
+            query["page"] = page
+            queries.append(query)
 
-        while page <= response["pagination"]["totalPages"]:
-            # Yield resources in the current request.
-            self.query["page"] = page
-            response = asyncio.run(api.search(model=self.model.endpoint, params=self.query))
-            resources = [self.model(**item) for item in response["list"]]
-            for resource in resources:
-                yield resource
+        # Prepare the searches we will need to send.
+        responses = [api.search(model=self.model.endpoint, params=query, session=session) for query in queries]
 
-            # Fetch new resources if needed.
-            page += 1
+        # Run our searches and extract payloads.
+        responses = await asyncio.gather(*responses)
+        results = []
+        for response in responses:
+            results.extend(response["list"])
+
+        # Parse the payloads and clean up session.
+        self.list = [self.model(**result) for result in results]
+        await session.close()
 
     def first(self) -> models._MatchableResource:
         """Return only the first record from a search result."""
-        if isinstance(self.list, Generator):
-            return next(self.list)
-        elif isinstance(self.list, list):
-            return self.list[0]
+        return self.list[0]
 
-    def all(self) -> List[models._MatchableResource]:
-        """Return all results from a search."""
-        records = list(self.list)
-        self.list = records
-        return records
+    def all(self) -> list:
+        """
+        Return all results from a search.
+
+        Returns:
+            list of :class:`digitalarchive.models._MatchableResource.
+        """
+        # If there was only one page of results, return it immediately.
+        if self.current_page == self.total_pages:
+            return self.list
+        else:
+            asyncio.run(self._get_all_search_results())
+            return self.list
 
     def hydrate(self, recurse: bool = False):
         """Hydrate all of the Resources in a resultset."""

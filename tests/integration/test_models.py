@@ -361,7 +361,7 @@ class TestTranslation:
 class TestSubject:
     def test_match_by_keyword(self):
         results = digitalarchive.Subject.match(name="soviet")
-        records = list(results.all())
+        records = results.all()
 
         # Check we got all the promised records
         assert len(records) == results.count
