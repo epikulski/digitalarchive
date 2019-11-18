@@ -7,6 +7,7 @@ from typing import Generator, List
 
 # 3rd Party Libraries
 import aiohttp
+import multidict
 
 # Application modules
 import digitalarchive.api as api
@@ -20,15 +21,15 @@ class ResourceMatcher:
     ResourceMatcher wraps search results and exposes methods for intereacting with a result set.
 
     Attributes:
-        list(:obj:`Generator` of :class:`digitalarchive.models._MatchableResource`) A Generator returning individual search results. Handles pagination of the DA API.
-        count: The number of respondant records to the given search.
+        list (:obj:`Generator` of :class:`digitalarchive.models._MatchableResource`) A Generator returning individual
+            search results. Handles pagination of the DA API.
+        count (int): The number of respondant records to the given search.
 
     """
-
     # pylint: disable=protected-access
 
     def __init__(
-        self, resource_model: models._MatchableResource, items_per_page=200, **kwargs
+        self, resource_model: models._MatchableResource, query: multidict.MultiDict, items_per_page=200
     ):
         """
         Wrapper for search and query related functions.
@@ -37,7 +38,7 @@ class ResourceMatcher:
         :param kwargs: Search keywords to match on.
         """
         self.model = resource_model
-        self.query = kwargs
+        self.query = query
         self.list: Generator[models._Resource, None, None]
         self.count: int
 
@@ -129,3 +130,4 @@ class ResourceMatcher:
                 for resource in self.list
             ]
         )
+        await session.close()

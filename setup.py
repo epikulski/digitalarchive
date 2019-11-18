@@ -21,7 +21,7 @@ REQUIRES_PYTHON = ">=3.7.0"
 VERSION = "0.1.7"
 
 # Required 3rd party libraries.
-REQUIRED = ["requests"]
+REQUIRED = ["requests", "aiohttp", "multidict"]
 
 # Optional Packages
 EXTRAS = {}

@@ -13,6 +13,7 @@ from typing import List, Any, Optional, Union
 
 # 3rd Party Libraries
 import aiohttp
+import multidict
 
 # Application Modules
 import digitalarchive.matching as matching
@@ -73,7 +74,10 @@ class _MatchableResource(_Resource):
         elif kwargs.get("value"):
             kwargs["term"] = kwargs.pop("value")
 
-        return matching.ResourceMatcher(cls, **kwargs)
+        # Convert to MultiDict for aiohttp.
+        query = multidict.MultiDict(kwargs)
+
+        return matching.ResourceMatcher(cls, query)
 
 
 @dataclass(eq=False)
@@ -738,13 +742,28 @@ class Document(_MatchableResource, _HydrateableResource, _TimestampedResource):
                 keywords.append(kwargs.pop(field))
         kwargs["q"] = " ".join(keywords)
 
+        # Convert params to aiohttp multidict.
+        query = multidict.MultiDict(kwargs)
+
+        # Unpack parameters that accept lists.
+        for key, value in list(query.items()):
+            if isinstance(value, list):
+                # Preserve values
+                nested_values = query.pop(key)
+
+                # Replace with duplicate entries for each for aiohttp's sake.
+                for nested_value in nested_values:
+                    query.add(key, nested_value)
+
         # Reformat fields that accept lists. This makes the queries inner joins rather than union all.
         for field in ["donor", "subject", "contributor", "coverage", "collection"]:
-            if field in kwargs.keys():
-                kwargs[f"{field}[]"] = kwargs.pop(field)
+            if field in query.keys():
+                list_values = query.popall(field)
+                for value in list_values:
+                    query.add(f"{field}[]", value)
 
-        # Run the match.
-        return matching.ResourceMatcher(cls, **kwargs)
+        # Run the match
+        return matching.ResourceMatcher(cls, query)
 
     def hydrate(self, recurse: bool = False):
         """
