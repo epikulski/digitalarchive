@@ -1,4 +1,5 @@
 """Helpers for searching the DA."""
+# pylint: disable=protected-access
 
 # Standard Library
 from __future__ import annotations
@@ -25,7 +26,6 @@ class ResourceMatcher:
         count (int): The number of respondant records to the given search.
 
     """
-    # pylint: disable=protected-access
 
     def __init__(
         self, resource_model: models._MatchableResource, query: multidict.MultiDict, items_per_page=200
@@ -38,6 +38,7 @@ class ResourceMatcher:
         """
         self.model = resource_model
         self.query = query
+        self.session = asyncio.run(self._refresh_da_session())
 
         # Set up typing for attributes populated after the search.
         self.list: list
@@ -55,7 +56,7 @@ class ResourceMatcher:
         else:
             # Fetch the first page of records from the API.
             self.query["itemsPerPage"] = items_per_page
-            response = asyncio.run(api.search(model=self.model.endpoint, params=self.query))
+            response = asyncio.run(api.search(model=self.model.endpoint, params=self.query, session=self.session))
 
             # Calculate pagination, with handling depending on model type.
             if self.model in [
@@ -87,9 +88,11 @@ class ResourceMatcher:
         # Wrap the response for SearchResult
         return {"list": [response]}
 
+    async def _refresh_da_session(self):
+        self.session = aiohttp.ClientSession()
+
     async def _get_all_search_results(self):
         # Calculate the queries we will need to send.
-        session = aiohttp.ClientSession()
         pages = range(self.current_page, (self.total_pages + 1))
         queries = []
         for page in pages:
@@ -98,7 +101,7 @@ class ResourceMatcher:
             queries.append(query)
 
         # Prepare the searches we will need to send.
-        responses = [api.search(model=self.model.endpoint, params=query, session=session) for query in queries]
+        responses = [api.search(model=self.model.endpoint, params=query, session=self.session) for query in queries]
 
         # Run our searches and extract payloads.
         responses = await asyncio.gather(*responses)
@@ -108,7 +111,6 @@ class ResourceMatcher:
 
         # Parse the payloads and clean up session.
         self.list = [self.model(**result) for result in results]
-        await session.close()
 
     def first(self) -> models._MatchableResource:
         """Return only the first record from a search result."""
@@ -135,11 +137,9 @@ class ResourceMatcher:
         asyncio.run(self._async_hydrate(recurse=recurse))
 
     async def _async_hydrate(self, recurse: bool):
-        session = aiohttp.ClientSession()
         await asyncio.gather(
             *[
-                resource._async_hydrate(session=session, recurse=recurse)
+                resource._async_hydrate(session=self.session, recurse=recurse)
                 for resource in self.list
             ]
         )
-        await session.close()
