@@ -17,7 +17,11 @@ import digitalarchive.exceptions as exceptions
 SESSION = requests.session()
 
 
-async def search(model: str, params: Optional[multidict.MultiDict] = None, session: aiohttp.ClientSession = None) -> dict:
+async def search(
+    model: str,
+    params: Optional[multidict.MultiDict] = None,
+    session: aiohttp.ClientSession = None,
+) -> dict:
     """
     Search for DA records by endpoint and term.
 
@@ -49,7 +53,9 @@ async def search(model: str, params: Optional[multidict.MultiDict] = None, sessi
         return await response.json()
 
 
-async def get(endpoint: str, resource_id: str, session: aiohttp.ClientSession = None) -> dict:
+async def get(
+    endpoint: str, resource_id: str, session: aiohttp.ClientSession = None
+) -> dict:
     """Retrieve a single record from the DA.
 
     todo: add logic to cleanup session if we created it for this request.
@@ -68,7 +74,8 @@ async def get(endpoint: str, resource_id: str, session: aiohttp.ClientSession = 
     async with response:
         if response.status != 200:
             raise exceptions.NoSuchResourceError(
-                "[!] Failed to find resource type %s at ID: %s" % (endpoint, resource_id)
+                "[!] Failed to find resource type %s at ID: %s"
+                % (endpoint, resource_id)
             )
         else:
             return await response.json()
