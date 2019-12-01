@@ -1,11 +1,16 @@
 """Test all DA models"""
 # pylint: disable = missing-docstring, no-self-use, too-few-public-methods
 
+# Standard Library
+import asyncio
 import unittest.mock
 from datetime import date, datetime
 
+# 3rd Party Libraries
 import pytest
+from multidict import MultiDict
 
+# Application Modules
 import digitalarchive.models as models
 import digitalarchive.exceptions as exceptions
 
@@ -15,16 +20,16 @@ class TestMatchableResource:
     def test_match_name(self, mock_matching):
         """Check appropriate model and kwargs passed to matching."""
         models.Subject.match(name="Soviet")
-        mock_matching.ResourceMatcher.assert_called_with(models.Subject, term="Soviet")
+        mock_matching.ResourceMatcher.assert_called_with(models.Subject, MultiDict(term="Soviet"))
 
     def test_match_value(self, mock_matching):
         models.Subject.match(value="Soviet")
-        mock_matching.ResourceMatcher.assert_called_with(models.Subject, term="Soviet")
+        mock_matching.ResourceMatcher.assert_called_with(models.Subject, MultiDict(term="Soviet"))
 
     def test_match_handle_term_and_name(self, mock_matching):
         models.Subject.match(name="Soviet", value="China")
         mock_matching.ResourceMatcher.assert_called_with(
-            models.Subject, term="Soviet China"
+            models.Subject, MultiDict(term="Soviet China")
         )
 
 
@@ -74,7 +79,9 @@ class TestHydrateableResource:
             "classifications": [],
         }
 
-        mock_api.get.return_value = mock_hydrated_doc_json
+        async_result = asyncio.Future()
+        async_result.set_result(mock_hydrated_doc_json)
+        mock_api.get.return_value = async_result
 
         # Pull the doc
         mock_stub_doc.pull()
@@ -91,7 +98,9 @@ class TestHydrateableResource:
 
         # Prep mocks
         subject = models.Subject(id="1", name="test_name", value="test_value")
-        mock_api.return_value = {"id": "1", "name": "test_name", "uri": "test_uri"}
+        api_result = asyncio.Future()
+        api_result.set_result({"id": "1", "name": "test_name", "uri": "test_uri"})
+        mock_api.return_value = api_result
 
         # Hydrate the resource.
         subject.hydrate()
@@ -111,7 +120,7 @@ class TestCollection:
         """Check appropriate model and kwargs passed to matching."""
         models.Collection.match(name="Soviet")
         mock_matching.ResourceMatcher.assert_called_with(
-            models.Collection, term="Soviet"
+            models.Collection, MultiDict(term="Soviet")
         )
 
     def test_datetime_parsing(self):
@@ -146,7 +155,7 @@ class TestDocument:
         """Check appropriate model and kwargs passed to matching."""
         models.Document.match(title="Soviet")
         mock_matching.ResourceMatcher.assert_called_with(
-            models.Document, q="Soviet", model="Record"
+            models.Document, MultiDict(model="Record", q="Soviet")
         )
 
     @unittest.mock.patch("digitalarchive.models.Document._process_date_searches")
@@ -169,7 +178,7 @@ class TestDocument:
 
         # Check that 'q' field properly constructed.
         mock_matching.assert_called_with(
-            models.Document, q="test_title test_description", model="Record"
+            models.Document, MultiDict(model="Record", q="test_title test_description")
         )
 
     @unittest.mock.patch(
