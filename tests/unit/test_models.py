@@ -94,7 +94,7 @@ class TestHydrateableResource:
         # Confirm doc is now hydrated
         assert mock_stub_doc.source == "Test Source"
 
-    @unittest.mock.patch("digitalarchive.models.api.get")
+    @unittest.mock.patch("digitalarchive.models.api")
     def test_hydrate(self, mock_api):
         """Test the zipping logic during hydration.
 
@@ -102,16 +102,19 @@ class TestHydrateableResource:
         """
 
         # Prep mocks
+        mock_api.get = MagicMock(
+            side_effect=asyncio.coroutine(
+                lambda **kwargs: {"id": "1", "name": "test_name", "uri": "test_uri"}
+            )
+        )
+
         subject = models.Subject(id="1", name="test_name", value="test_value")
-        api_result = asyncio.Future()
-        api_result.set_result({"id": "1", "name": "test_name", "uri": "test_uri"})
-        mock_api.return_value = api_result
 
         # Hydrate the resource.
         subject.hydrate()
 
         # Check that mock pull was called.
-        mock_api.assert_called_once()
+        mock_api.get.assert_called_once()
 
         # check that result is merged
         assert subject.name == "test_name"
