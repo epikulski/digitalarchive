@@ -219,14 +219,14 @@ class _Asset(_HydrateableResource):
 
     async def _async_hydrate(self, session: aiohttp.ClientSession = None, recurse: bool = False):
         """Download the complete version of an Asset."""
-        response_content = await api.get_asset(f"https://digitalarchive.wilsoncenter.org/{self.url}", session=session)
+        response_content = await api.get_asset(url=f"https://digitalarchive.wilsoncenter.org/{self.url}", session=session)
 
         # Preserve the raw content from the DA in any case.
         self.raw = response_content
 
         # Add add helper attributes for the common filetypes.
         if self.extension == "html":
-            self.html = self.raw = response_content.decode()
+            self.html = response_content.decode()
             self.pdf = None
 
         elif self.extension == "pdf":

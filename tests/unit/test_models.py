@@ -490,34 +490,43 @@ class TestTranscript:
         )
         return transcript
 
-    @unittest.mock.patch("digitalarchive.models.api.SESSION")
-    def test_hydrate(self, mock_requests, mock_transcript):
+    @unittest.mock.patch("digitalarchive.models.api")
+    def test_hydrate(self, mock_api, mock_transcript):
         # Prep mocks.
-        mock_requests.get().status_code = 200
+        mock_api.get_asset = MagicMock(
+            side_effect=asyncio.coroutine(
+                lambda **args: MagicMock()
+            )
+        )
 
         # Run code
         mock_transcript.extension = "html"
         mock_transcript.hydrate()
 
         # Ensure properly formed URL called
-        mock_requests.get.assert_called_with(
-            "https://digitalarchive.wilsoncenter.org/test_url"
+        mock_api.get_asset.assert_called_with(
+            url="https://digitalarchive.wilsoncenter.org/test_url", session=None
         )
 
-    @unittest.mock.patch("digitalarchive.models.api.SESSION")
-    def test_hydrate_html(self, mock_requests, mock_transcript):
+    @unittest.mock.patch("digitalarchive.models.api")
+    def test_hydrate_html(self, mock_api, mock_transcript):
         # Prep mocks.
-        mock_requests.get().status_code = 200
+        mock_response = MagicMock()
+        mock_api.get_asset = MagicMock(
+            side_effect=asyncio.coroutine(
+                lambda **args: mock_response
+            )
+        )
 
         # Run code
         mock_transcript.extension = "html"
         mock_transcript.hydrate()
 
         # Ensure raw gets set.
-        assert mock_transcript.raw is mock_requests.get().content
+        assert mock_transcript.raw is mock_response
 
         # Ensure html gets set
-        assert mock_transcript.html is mock_requests.get().text
+        assert mock_transcript.html is mock_response.decode()
 
     @unittest.mock.patch("digitalarchive.models.api.SESSION")
     def test_hydrate_pdf(self, mock_requests, mock_transcript):
