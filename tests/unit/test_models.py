@@ -4,6 +4,7 @@
 # Standard Library
 import asyncio
 import unittest.mock
+from unittest.mock import MagicMock
 from datetime import date, datetime
 
 # 3rd Party Libraries
@@ -20,11 +21,15 @@ class TestMatchableResource:
     def test_match_name(self, mock_matching):
         """Check appropriate model and kwargs passed to matching."""
         models.Subject.match(name="Soviet")
-        mock_matching.ResourceMatcher.assert_called_with(models.Subject, MultiDict(term="Soviet"))
+        mock_matching.ResourceMatcher.assert_called_with(
+            models.Subject, MultiDict(term="Soviet")
+        )
 
     def test_match_value(self, mock_matching):
         models.Subject.match(value="Soviet")
-        mock_matching.ResourceMatcher.assert_called_with(models.Subject, MultiDict(term="Soviet"))
+        mock_matching.ResourceMatcher.assert_called_with(
+            models.Subject, MultiDict(term="Soviet")
+        )
 
     def test_match_handle_term_and_name(self, mock_matching):
         models.Subject.match(name="Soviet", value="China")
@@ -412,7 +417,7 @@ class TestDocument:
         # Check that our subject field wasn't modified.
         assert isinstance(doc.subjects, list)
 
-        # check that the other child records are still unhydrated.
+        # check that the other child records are s  till unhydrated.
         assert doc.publishers is models.UnhydratedField
 
     def test_process_related_model_searches_languages(self):
@@ -635,11 +640,15 @@ class TestTheme:
     @unittest.mock.patch("digitalarchive.models.api")
     def test_pull(self, mock_api):
         """Test that theme.pull uses slug instead of id"""
-        mock_result = asyncio.Future()
-        mock_result.set_result({"id": "test_id", "slug": "test_slug"})
-        mock_api.get.return_value = mock_result
+        mock_api.get = MagicMock(
+            side_effect=asyncio.coroutine(
+                lambda **kwargs: {"id": "test_id", "slug": "test_slug"}
+            )
+        )
         test_theme = models.Theme(id="test_id", slug="test_slug")
         test_theme.pull()
 
         # Check that api was called with slug
-        mock_api.get.assert_called_with(endpoint="theme", resource_id="test_slug", session=None)
+        mock_api.get.assert_called_with(
+            endpoint="theme", resource_id="test_slug", session=None
+        )
