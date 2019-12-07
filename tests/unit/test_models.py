@@ -632,12 +632,14 @@ class TestTheme:
         for collection in test_theme.featured_collections:
             assert isinstance(collection, models.Collection)
 
-    @unittest.mock.patch("digitalarchive.models.api.get")
+    @unittest.mock.patch("digitalarchive.models.api")
     def test_pull(self, mock_api):
         """Test that theme.pull uses slug instead of id"""
-        mock_api.return_value = {"id": "test_id", "slug": "test_slug"}
+        mock_result = asyncio.Future()
+        mock_result.set_result({"id": "test_id", "slug": "test_slug"})
+        mock_api.get.return_value = mock_result
         test_theme = models.Theme(id="test_id", slug="test_slug")
         test_theme.pull()
 
         # Check that api was called with slug
-        mock_api.assert_called_with(endpoint="theme", resource_id="test_slug")
+        mock_api.get.assert_called_with(endpoint="theme", resource_id="test_slug", session=None)
