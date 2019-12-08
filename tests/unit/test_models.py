@@ -204,10 +204,8 @@ class TestDocument:
             {"collections": mock_collections, "model": "Record"}
         )
 
-        # Check that collection field re-named
-
         # mock_matching.assert_called_with(models.Document, collection[]= mock_collections, model="Record"})
-        assert "collection[]" in mock_matching.call_args[1].keys()
+        assert "collection[]" in mock_matching.call_args[0][1].keys()
 
     def test_invalid_language_search(self):
         with pytest.raises(exceptions.MalformedLanguageSearch):
@@ -325,8 +323,11 @@ class TestDocument:
 
         assert doc.date_range_start == date(2019, 10, 26)
 
-    @unittest.mock.patch("digitalarchive.models.Document.pull")
+    @unittest.mock.patch("digitalarchive.models.Document._async_pull")
     def test_hydrate(self, mock_pull):
+        # Mock out pull response.
+        mock_pull.side_effect = asyncio.coroutine(lambda **kwargs: {})
+
         doc = models.Document(
             id=1,
             uri="test",
@@ -346,13 +347,32 @@ class TestDocument:
         # Check that record was pulled
         mock_pull.assert_called_once()
 
-    @unittest.mock.patch("digitalarchive.models.Document.pull")
+    @unittest.mock.patch("digitalarchive.models.Document._async_pull")
     def test_hydrate_recursive(self, mock_pull):
         """Check that recursion logic fires when parameter is enabled."""
-        mock_transcript = unittest.mock.MagicMock()
-        mock_translation = unittest.mock.MagicMock()
-        mock_media_file = unittest.mock.MagicMock()
-        mock_collection = unittest.mock.MagicMock()
+        # Mock out pull response.
+        mock_pull.side_effect = asyncio.coroutine(lambda **kwargs: {})
+
+        mock_transcript = MagicMock()
+        mock_transcript._async_hydrate.side_effect = asyncio.coroutine(
+            lambda **kwargs: MagicMock()
+        )
+
+        mock_translation = MagicMock()
+        mock_translation._async_hydrate.side_effect = asyncio.coroutine(
+            lambda **kwargs: MagicMock()
+        )
+
+        mock_media_file = MagicMock()
+        mock_media_file._async_hydrate.side_effect = asyncio.coroutine(
+            lambda **kwargs: MagicMock()
+        )
+
+        mock_collection = MagicMock()
+        mock_collection._async_hydrate.side_effect = asyncio.coroutine(
+            lambda **kwargs: MagicMock()
+        )
+
         doc = models.Document(
             id=1,
             uri="test",
@@ -373,10 +393,10 @@ class TestDocument:
         doc.hydrate(recurse=True)
 
         # check that mock subordinate records were called.
-        mock_transcript.hydrate.assert_called_once()
-        mock_translation.hydrate.assert_called_once()
-        mock_media_file.hydrate.assert_called_once()
-        mock_collection.hydrate.assert_called_once()
+        mock_transcript._async_hydrate.assert_called_once()
+        mock_translation._async_hydrate.assert_called_once()
+        mock_media_file._async_hydrate.assert_called_once()
+        mock_collection._async_hydrate.assert_called_once()
 
     def test_parse_child_records(self):
         test_subject = {"id": "1", "name": "test_subject"}
@@ -494,9 +514,7 @@ class TestTranscript:
     def test_hydrate(self, mock_api, mock_transcript):
         # Prep mocks.
         mock_api.get_asset = MagicMock(
-            side_effect=asyncio.coroutine(
-                lambda **args: MagicMock()
-            )
+            side_effect=asyncio.coroutine(lambda **args: MagicMock())
         )
 
         # Run code
@@ -513,9 +531,7 @@ class TestTranscript:
         # Prep mocks.
         mock_response = MagicMock()
         mock_api.get_asset = MagicMock(
-            side_effect=asyncio.coroutine(
-                lambda **args: mock_response
-            )
+            side_effect=asyncio.coroutine(lambda **args: mock_response)
         )
 
         # Run code
@@ -533,9 +549,7 @@ class TestTranscript:
         # Prep mocks.
         mock_response = MagicMock()
         mock_api.get_asset = MagicMock(
-            side_effect=asyncio.coroutine(
-                lambda **args: mock_response
-            )
+            side_effect=asyncio.coroutine(lambda **args: mock_response)
         )
 
         # Run code
@@ -553,9 +567,7 @@ class TestTranscript:
         # Prep mocks.
         mock_response = MagicMock()
         mock_api.get_asset = MagicMock(
-            side_effect=asyncio.coroutine(
-                lambda **args: mock_response
-            )
+            side_effect=asyncio.coroutine(lambda **args: mock_response)
         )
 
         # Run code
