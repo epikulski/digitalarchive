@@ -528,43 +528,46 @@ class TestTranscript:
         # Ensure html gets set
         assert mock_transcript.html is mock_response.decode()
 
-    @unittest.mock.patch("digitalarchive.models.api.SESSION")
-    def test_hydrate_pdf(self, mock_requests, mock_transcript):
+    @unittest.mock.patch("digitalarchive.models.api")
+    def test_hydrate_pdf(self, mock_api, mock_transcript):
         # Prep mocks.
-        mock_requests.get().status_code = 200
+        mock_response = MagicMock()
+        mock_api.get_asset = MagicMock(
+            side_effect=asyncio.coroutine(
+                lambda **args: mock_response
+            )
+        )
 
         # Run code
         mock_transcript.extension = "pdf"
         mock_transcript.hydrate()
 
         # Ensure raw gets set.
-        assert mock_transcript.raw is mock_requests.get().content
+        assert mock_transcript.raw is mock_response
 
         # Ensure html gets set
-        assert mock_transcript.pdf is mock_requests.get().content
+        assert mock_transcript.pdf is mock_response
 
-    @unittest.mock.patch("digitalarchive.models.api.SESSION")
-    def test_hydrate_bad_extension(self, mock_requests, mock_transcript):
+    @unittest.mock.patch("digitalarchive.models.api")
+    def test_hydrate_bad_extension(self, mock_api, mock_transcript):
         # Prep mocks.
-        mock_requests.get.return_value.status_code = 200
+        mock_response = MagicMock()
+        mock_api.get_asset = MagicMock(
+            side_effect=asyncio.coroutine(
+                lambda **args: mock_response
+            )
+        )
 
         # Run code
         mock_transcript.extension = "invalid"
         mock_transcript.hydrate()
 
         # Make sure we sucessfully made the call without an error.
-        mock_requests.get.assert_called()
+        mock_api.get_asset.assert_called()
 
         # Make sure pdf and html are blank.
         assert mock_transcript.html is models.UnhydratedField
         assert mock_transcript.pdf is models.UnhydratedField
-
-    @unittest.mock.patch("digitalarchive.models.api.SESSION")
-    def test_hydrate_server_error(self, mock_requests, mock_transcript):
-        mock_requests.get().status_code = 500
-
-        with pytest.raises(Exception):
-            mock_transcript.hydrate()
 
 
 class TestTranslation:
