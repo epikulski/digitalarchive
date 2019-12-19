@@ -73,7 +73,7 @@ async def get(
     response = await session.get(url)
     async with response:
         if response.status != 200:
-            raise exceptions.NoSuchResourceError(
+            raise Exception(
                 "[!] Failed to find resource type %s at ID: %s"
                 % (endpoint, resource_id)
             )

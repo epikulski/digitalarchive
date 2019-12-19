@@ -2,14 +2,19 @@
 # pylint: disable=no-self-use,invalid-name,missing-docstring
 
 # Standard Library
-import unittest.mock
+import asyncio
+import unittest
+from unittest.mock import MagicMock
 
 # 3rd Party Libs
 import pytest
 
 # Library Modules
 import digitalarchive.api
+import digitalarchive.exceptions as exceptions
 from digitalarchive.models import Subject
+
+
 
 
 class TestSearch:
@@ -53,34 +58,51 @@ class TestSearch:
 
 
 class TestGet:
-    @unittest.mock.patch("digitalarchive.api.SESSION")
-    def test_get(self, mock_requests):
+    @pytest.mark.asyncio
+    async def test_get(self):
         """Confirm digitalarchive.api sends a correctly formed request."""
-        # pylint: disable=redefined-outer-name
-        # Set up mock
-        mock_requests.get().status_code = 200
-        mock_response = unittest.mock.MagicMock()
-        mock_requests.get().json.return_value = mock_response
+        with unittest.mock.patch("digitalarchive.api.aiohttp.ClientSession") as mock_session:
+            mock_response = AsyncContextManagerMock()
+            mock_json = MagicMock()
+            mock_response.status = 200
+            mock_response.json.side_effect = asyncio.coroutine(
+                lambda: mock_json
+            )
+            mock_session().get = MagicMock(
+                side_effect=asyncio.coroutine(
+                    lambda *args: mock_response
+                )
+            )
 
-        # Query API for dummy record.
-        data = digitalarchive.api.get(endpoint="document", resource_id="1")
+            # Query API for dummy record.
+            data = await digitalarchive.api.get(endpoint="document", resource_id="1")
 
         # Confirm url was constructed correctly.
         intended_url = "https://digitalarchive.wilsoncenter.org/srv/document/1.json"
-        mock_requests.get.assert_called_with(intended_url)
+        mock_session().get.assert_called_with(intended_url)
 
         # Confirm correct data was returned
-        assert data == mock_response
+        assert data == mock_json
 
-    @unittest.mock.patch("digitalarchive.api.SESSION")
-    def test_get_fail(self, mock_requests):
+    @pytest.mark.asyncio
+    async def test_get_fail(self):
         """Confirm digitalarchive.api raises exception on server errors."""
-        # Set up mock
-        mock_requests.get().status_code = 500
+        with unittest.mock.patch("digitalarchive.api.aiohttp.ClientSession") as mock_session:
+            # Set up mock
+            mock_response = AsyncContextManagerMock()
+            mock_response.status = 500
+            mock_session().get = MagicMock(
+                side_effect=asyncio.coroutine(
+                    lambda *args: mock_response
+                )
+            )
 
-        # Confirm exception raised.
-        with pytest.raises(Exception):
-            digitalarchive.api.get(endpoint="document", resource_id="1")
+            # Confirm exception raised.
+            test =  asyncio.gather(digitalarchive.api.get(endpoint="document", resource_id="1"), return_exceptions=True)
+            await test
+            # with pytest.raises(Exception):
+            #     response = await digitalarchive.api.get(endpoint="document", resource_id="1")
+            self.fail()
 
 class TestGetDateRange:
 
@@ -89,3 +111,24 @@ class TestGetDateRange:
         test_date_range = digitalarchive.api.get_date_range()
         mock_session.get.assert_called_once()
         assert test_date_range is mock_session.get().json()
+
+
+class AsyncContextManagerMock(MagicMock):
+    """
+    A MagicMock compatible with async context managers.
+
+    Note: Python 3.8 has an out-of-the-box awaitable mock, but we include
+    this for backwards compatibility to 3.7.
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        for key in ('aenter_return', 'aexit_return'):
+            setattr(self, key,  kwargs[key] if key in kwargs else MagicMock())
+
+    async def __aenter__(self):
+        return self.aenter_return
+
+    async def __aexit__(self, *args):
+        return self.aexit_return
