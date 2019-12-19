@@ -16,7 +16,7 @@ class ResourceMatcher:
     ResourceMatcher wraps search results and exposes methods for intereacting with a result set.
 
     Attributes:
-        list(:obj:`Generator` of :class:`digitalarchive.models._MatchableResource`) A Generator returning individual search results. Handles pagination of the DA API.
+        list(:obj:`Generator` of :class:`digitalarchive.models.Resource`) A Generator returning individual search results. Handles pagination of the DA API.
         count: The number of respondant records to the given search.
 
     """
@@ -24,7 +24,7 @@ class ResourceMatcher:
     # pylint: disable=protected-access
 
     def __init__(
-        self, resource_model: models._MatchableResource, items_per_page=200, **kwargs
+        self, resource_model: models.Resource, items_per_page=200, **kwargs
     ):
         """
         Wrapper for search and query related functions.
@@ -34,7 +34,7 @@ class ResourceMatcher:
         """
         self.model = resource_model
         self.query = kwargs
-        self.list: Generator[models._Resource, None, None]
+        self.list: Generator[models.Resource, None, None]
         self.count: int
 
         # if this is a request for a single record by ID, return only the record
@@ -83,7 +83,7 @@ class ResourceMatcher:
         # Wrap the response for SearchResult
         return {"list": [response]}
 
-    def _get_all_search_results(self, response) -> models._MatchableResource:
+    def _get_all_search_results(self, response) -> models.MatchingMixin:
         """Create Generator to handle search result pagination."""
         page = response["pagination"]["page"]
 
@@ -98,14 +98,14 @@ class ResourceMatcher:
             # Fetch new resources if needed.
             page += 1
 
-    def first(self) -> models._MatchableResource:
+    def first(self) -> models.MatchingMixin:
         """Return only the first record from a search result."""
         if isinstance(self.list, Generator):
             return next(self.list)
         elif isinstance(self.list, list):
             return self.list[0]
 
-    def all(self) -> List[models._MatchableResource]:
+    def all(self) -> List[models.MatchingMixin]:
         """Return all results from a search."""
         records = list(self.list)
         self.list = records
