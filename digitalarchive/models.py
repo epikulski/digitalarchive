@@ -11,6 +11,7 @@ import copy
 from datetime import datetime, date
 from dataclasses import dataclass
 from typing import List, Any, Optional, Union
+from abc import ABC
 
 # Application Modules
 import digitalarchive.matching as matching
@@ -25,7 +26,7 @@ class UnhydratedField:
 
 
 @dataclass(eq=False)
-class _Resource:
+class Resource(ABC):
     """
     Abstract parent for all DigitalArchive objects.
 
@@ -45,7 +46,7 @@ class _Resource:
 
 
 @dataclass(eq=False)
-class _MatchableResource(_Resource):
+class MatchingMixin:
     """Abstract parent for Resources that can be searched against."""
 
     @classmethod
@@ -76,8 +77,8 @@ class _MatchableResource(_Resource):
 
 
 @dataclass(eq=False)
-class _HydrateableResource(_Resource):
-    """Abstract parent for resources that can be individually accessed and hydrated."""
+class HydrateMixin:
+    """Mixin for resources that can be individually accessed and hydrated."""
 
     def pull(self):
         """Update the resource using data from the DA API."""
@@ -104,8 +105,8 @@ class _HydrateableResource(_Resource):
         self.__init__(**hydrated_fields)
 
 
-class _TimestampedResource(_Resource):
-    """Abstract parent for resources that have publication timestamp metadata."""
+class TimestampsMixin:
+    """Mixin for resources that have publication timestamp metadata."""
 
     # pylint: disable=too-few-public-methods
 
@@ -125,7 +126,7 @@ class _TimestampedResource(_Resource):
 
 
 @dataclass(eq=False)
-class Subject(_MatchableResource, _HydrateableResource):
+class Subject(Resource, MatchingMixin, HydrateMixin):
     """
     A historical topic to which documents can be related.
 
@@ -147,7 +148,7 @@ class Subject(_MatchableResource, _HydrateableResource):
 
 
 @dataclass(eq=False)
-class Language(_Resource):
+class Language(Resource):
     """
     The original language of a resource.
 
@@ -160,7 +161,7 @@ class Language(_Resource):
 
 
 @dataclass(eq=False)
-class _Asset(_HydrateableResource):
+class Asset(Resource, ABC, HydrateMixin):
     """
     Abstract parent for Translations, Transcriptions, and MediaFiles.
 
@@ -223,7 +224,7 @@ class _Asset(_HydrateableResource):
 
 
 @dataclass(eq=False)
-class Transcript(_Asset):
+class Transcript(Asset):
     """A transcript of a document in its original language.
 
     Attributes:
@@ -246,12 +247,12 @@ class Transcript(_Asset):
     raw: Union[str, bytes, UnhydratedField] = UnhydratedField
 
     def __post_init__(self):
-        """See note on _Asset __post_init__ function."""
+        """See note on Asset __post_init__ function."""
         pass  # pylint: disable=unnecessary-pass
 
 
 @dataclass(eq=False)
-class Translation(_Asset):
+class Translation(Asset):
     """
     A translation of a Document into a another language.
 
@@ -280,7 +281,7 @@ class Translation(_Asset):
 
 
 @dataclass(eq=False)
-class MediaFile(_Asset):
+class MediaFile(Asset):
     """
     An original scan of a Document.
 
@@ -305,7 +306,7 @@ class MediaFile(_Asset):
 
 
 @dataclass(eq=False)
-class Contributor(_MatchableResource, _HydrateableResource):
+class Contributor(Resource, MatchingMixin, HydrateMixin):
     """
     An individual person or organization that contributed to the creation of the document.
 
@@ -325,7 +326,7 @@ class Contributor(_MatchableResource, _HydrateableResource):
 
 
 @dataclass(eq=False)
-class Donor(_Resource):
+class Donor(Resource):
     """
     An entity whose resources helped publish or translate a document.
 
@@ -339,7 +340,7 @@ class Donor(_Resource):
 
 
 @dataclass(eq=False)
-class Coverage(_MatchableResource, _HydrateableResource):
+class Coverage(Resource, MatchingMixin, HydrateMixin):
     """
     A geographical area referenced by a Document.
 
@@ -387,7 +388,7 @@ class Coverage(_MatchableResource, _HydrateableResource):
 
 
 @dataclass(eq=False)
-class Collection(_MatchableResource, _HydrateableResource, _TimestampedResource):
+class Collection(Resource, MatchingMixin, HydrateMixin, TimestampsMixin):
     """
     A collection of Documents on a single topic
 
@@ -441,7 +442,7 @@ class Collection(_MatchableResource, _HydrateableResource, _TimestampedResource)
 
 
 @dataclass(eq=False)
-class Repository(_MatchableResource, _HydrateableResource):
+class Repository(Resource, MatchingMixin, HydrateMixin):
     """
     The archive or library possessing the original, physical Document.
 
@@ -459,7 +460,7 @@ class Repository(_MatchableResource, _HydrateableResource):
 
 
 @dataclass(eq=False)
-class Publisher(_Resource):
+class Publisher(Resource):
     """
     An organization involved in the publication of the document.
 
@@ -474,7 +475,7 @@ class Publisher(_Resource):
 
 
 @dataclass(eq=False)
-class Type(_Resource):
+class Type(Resource):
     """
     The type of a document (memo, report, etc).
 
@@ -487,7 +488,7 @@ class Type(_Resource):
 
 
 @dataclass(eq=False)
-class Right(_Resource):
+class Right(Resource):
     """
     A copyright notice attached to the Document.
 
@@ -502,7 +503,7 @@ class Right(_Resource):
 
 
 @dataclass(eq=False)
-class Classification(_Resource):
+class Classification(Resource):
     """
     A classification marking applied to the original Document.
 
@@ -515,7 +516,7 @@ class Classification(_Resource):
 
 
 @dataclass(eq=False)
-class Document(_MatchableResource, _HydrateableResource, _TimestampedResource):
+class Document(Resource, MatchingMixin, HydrateMixin, TimestampsMixin):
     """
     A Document corresponding to a single record page on digitalarchive.wilsoncenter.org.
 
@@ -953,7 +954,7 @@ class Document(_MatchableResource, _HydrateableResource, _TimestampedResource):
 
 
 @dataclass(eq=False)
-class Theme(_HydrateableResource):
+class Theme(Resource, HydrateMixin):
     """
     A parent container for collections on a single geopolitical topic.
 

@@ -341,7 +341,7 @@ class TestCollection:
 
 class TestTranslation:
     def test_hydrate(self):
-        """Test hydration method for digitalarchive.models._Asset"""
+        """Test hydration method for digitalarchive.models.Asset"""
         # Fetch a translation
         test_doc = digitalarchive.Document.match(id=208400).first()
         test_translation = test_doc.translations[0]
