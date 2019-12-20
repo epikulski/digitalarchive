@@ -52,7 +52,7 @@ class TestResourceMatcher:
         """Test Search API called with proper params."""
         # Run match
         mock_get_by_id.return_value = {"list": [{"id": 1}]}
-        test_match = matching.ResourceMatcher(models._Resource, id=1)
+        test_match = matching.ResourceMatcher(models.Resource, id=1)
 
         # Check search called with proper params.
         mock_get_by_id.assert_called_once()
@@ -60,7 +60,7 @@ class TestResourceMatcher:
         # Inspect list for proper data
         match_results = list(test_match.list)
         assert len(match_results) == 1
-        assert isinstance(match_results[0], models._Resource)
+        assert isinstance(match_results[0], models.Resource)
 
     @unittest.mock.patch("digitalarchive.api.get")
     def test_match_record_by_id(self, mock_api_get):
@@ -83,15 +83,15 @@ class TestResourceMatcher:
 
     def test_invalid_keyword(self):
         with pytest.raises(exceptions.InvalidSearchFieldError):
-            models._MatchableResource.match(test="test")
+            models.Collection.match(test="test")
 
     @unittest.mock.patch("digitalarchive.matching.ResourceMatcher._record_by_id")
     def test_first(self, mock_get_by_id):
         # Run match
         mock_get_by_id.return_value = {"list": [{"id": 1}]}
-        test_match = matching.ResourceMatcher(models._Resource, id=1).first()
+        test_match = matching.ResourceMatcher(models.Resource, id=1).first()
 
-        assert isinstance(test_match, models._Resource)
+        assert isinstance(test_match, models.Resource)
 
     @unittest.mock.patch("digitalarchive.api.search")
     def test_all(self, mock_search):
@@ -164,10 +164,10 @@ class TestResourceMatcher:
     def test_repr(self, mock_get_by_id):
         # Run match
         mock_get_by_id.return_value = {"list": [{"id": 1}]}
-        test_match = matching.ResourceMatcher(models._Resource, id=1)
+        test_match = matching.ResourceMatcher(models.Resource, id=1)
         assert (
             str(test_match)
-            == "ResourceMatcher(model=<class 'digitalarchive.models._Resource'>, query={'id': 1}, count=1)"
+            == "ResourceMatcher(model=<class 'digitalarchive.models.Resource'>, query={'id': 1}, count=1)"
         )
 
     @unittest.mock.patch("digitalarchive.api.search")

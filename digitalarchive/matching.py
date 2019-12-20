@@ -1,5 +1,8 @@
-"""Helpers for searching the DA."""
-# pylint: disable=protected-access
+"""
+digitalrchive.matching
+
+This module provides a ResourceMatcher class that provides search functionality for searchable model types.
+"""
 
 # Standard Library
 from __future__ import annotations
@@ -16,23 +19,23 @@ import digitalarchive.models as models
 
 class ResourceMatcher:
     """
-    A wrapper for search results.
+    Runs a search against the DA API for the provided DA model and keywords.
 
-    ResourceMatcher wraps search results and exposes methods for intereacting with a result set.
+    ResourceMatcher wraps search results and exposes methods for interacting with the resultant set of resources.
 
     Attributes:
-        list (:obj:`Generator` of :class:`digitalarchive.models._MatchableResource`) A Generator returning individual
+        list(:obj:`Generator` of :class:`digitalarchive.models.Resource`) A Generator returning individual
             search results. Handles pagination of the DA API.
-        count (int): The number of respondant records to the given search.
-
+        count: The number of respondant records to the given search.
     """
 
     def __init__(
-        self, resource_model: models._MatchableResource, query: multidict.MultiDict, items_per_page=200
+        self, resource_model: models.Resource, query: multidict.MultiDict, items_per_page=200
     ):
         """
-        Wrapper for search and query related functions.
-        :param resource_model: A DA model object from digitalarchive.models
+        Parses search keywords, determines the kind of search to run, and constructs the results.
+
+        :param resource_model: A model from :mod:`digitalarchive.models`.
         :param items_per_age: The number of search hits to include on each page of results.
         :param kwargs: Search keywords to match on.
         """
@@ -112,7 +115,7 @@ class ResourceMatcher:
         # Parse the payloads and clean up session.
         self.list = [self.model(**result) for result in results]
 
-    def first(self) -> models._MatchableResource:
+    def first(self) -> models.Resource:
         """Return only the first record from a search result."""
         return self.list[0]
 
@@ -131,7 +134,7 @@ class ResourceMatcher:
             return self.list
 
     def hydrate(self, recurse: bool = False):
-        """Hydrate all of the Resources in a resultset."""
+        """Hydrate all of the resources in a search result."""
         # Fetch all the records.
         self.list = list(self.list)
         asyncio.run(self._async_hydrate(recurse=recurse))

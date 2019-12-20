@@ -478,7 +478,7 @@ class TestAsset:
         """ Test digitalarchive.models_Asset abstract parent can be instantiated."""
         # pylint: disable=protected-access
         # Create an Asset
-        test_asset = models._Asset(
+        test_asset = models.Asset(
             id="testid",
             filename="testfile",
             content_type="test_content_type",
