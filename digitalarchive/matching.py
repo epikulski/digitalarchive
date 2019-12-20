@@ -1,4 +1,8 @@
-"""Helpers for searching the DA."""
+"""
+digitalrchive.matching
+
+This module provides a ResourceMatcher class that provides search functionality for searchable model types.
+"""
 
 # Standard Library
 from __future__ import annotations
@@ -11,14 +15,14 @@ import digitalarchive.models as models
 
 class ResourceMatcher:
     """
-    A wrapper for search results.
+    Runs a search against the DA API for the provided DA model and keywords.
 
-    ResourceMatcher wraps search results and exposes methods for intereacting with a result set.
+    ResourceMatcher wraps search results and exposes methods for interacting with the resultant set of resources.
 
     Attributes:
-        list(:obj:`Generator` of :class:`digitalarchive.models.Resource`) A Generator returning individual search results. Handles pagination of the DA API.
+        list(:obj:`Generator` of :class:`digitalarchive.models.Resource`) A Generator returning individual
+            search results. Handles pagination of the DA API.
         count: The number of respondant records to the given search.
-
     """
 
     # pylint: disable=protected-access
@@ -27,8 +31,9 @@ class ResourceMatcher:
         self, resource_model: models.Resource, items_per_page=200, **kwargs
     ):
         """
-        Wrapper for search and query related functions.
-        :param resource_model: A DA model object from digitalarchive.models
+        Parses search keywords, determines the kind of search to run, and constructs the results.
+
+        :param resource_model: A model from :mod:`digitalarchive.models`.
         :param items_per_age: The number of search hits to include on each page of results.
         :param kwargs: Search keywords to match on.
         """
@@ -76,14 +81,14 @@ class ResourceMatcher:
         return f"ResourceMatcher(model={self.model}, query={self.query}, count={self.count})"
 
     def _record_by_id(self) -> dict:
-        """Get a single record by ID."""
+        """Get a single record by its ID."""
         response = api.get(
             endpoint=self.model.endpoint, resource_id=self.query.get("id")
         )
         # Wrap the response for SearchResult
         return {"list": [response]}
 
-    def _get_all_search_results(self, response) -> models.MatchingMixin:
+    def _get_all_search_results(self, response) -> models.Resource:
         """Create Generator to handle search result pagination."""
         page = response["pagination"]["page"]
 
@@ -98,21 +103,22 @@ class ResourceMatcher:
             # Fetch new resources if needed.
             page += 1
 
-    def first(self) -> models.MatchingMixin:
+    def first(self) -> models.Resource:
         """Return only the first record from a search result."""
         if isinstance(self.list, Generator):
             return next(self.list)
         elif isinstance(self.list, list):
             return self.list[0]
 
-    def all(self) -> List[models.MatchingMixin]:
-        """Return all results from a search."""
+    def all(self) -> List[models.Resource]:
+        """
+        Exhaust the results generator and return a list of all search results."""
         records = list(self.list)
         self.list = records
         return records
 
     def hydrate(self, recurse: bool = False):
-        """Hydrate all of the Resources in a resultset."""
+        """Hydrate all of the resources in a search result."""
         # Fetch all the records.
         self.list = list(self.list)
 
