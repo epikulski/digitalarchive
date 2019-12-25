@@ -2,6 +2,7 @@
 # pylint: disable = missing-docstring, no-self-use, too-few-public-methods
 
 # Standard Library
+import json
 import asyncio
 import unittest.mock
 from unittest.mock import MagicMock
@@ -472,6 +473,41 @@ class TestDocument:
                 {"languages": [unittest.mock.MagicMock(), unittest.mock.MagicMock()]}
             )
 
+    def test_to_json(self):
+        """Test serialization of Document instances."""
+        mock_transcript = unittest.mock.MagicMock()
+        mock_translation = unittest.mock.MagicMock()
+        mock_media_file = unittest.mock.MagicMock()
+        mock_collection = models.Collection(
+            id=1,
+            name="test",
+            slug="test",
+            source_created_at="2019-10-26 15:43:11",
+            source_updated_at="2019-10-26 15:43:11",
+            first_published_at="2019-10-26 15:43:11",
+        )
+
+        doc = models.Document(
+            id=1,
+            uri="test",
+            title="test",
+            description="test",
+            doc_date="test",
+            frontend_doc_date="test",
+            slug="test",
+            source_created_at="2019-10-26 16:12:00",
+            source_updated_at="2019-10-26 16:12:00",
+            first_published_at="2019-10-26 16:12:00",
+            date_range_start="20191026",
+            transcripts=[mock_transcript],
+            translations=[mock_translation],
+            media_files=[mock_media_file],
+            collections=[mock_collection],
+        )
+
+        reloaded_dict = json.loads(doc.to_json())
+        # Check that the subfields were properly parsed.
+        assert reloaded_dict["collections"][0]["main_src"] == "Unhydrated Field"
 
 class TestAsset:
     def test_init(self):

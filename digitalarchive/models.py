@@ -6,12 +6,14 @@ The module provides documented models and an ORM for interacting with the DA API
 from __future__ import annotations
 
 # Standard Library
+import dataclasses
+import json
 import logging
 import copy
 import asyncio
 from datetime import datetime, date
 from dataclasses import dataclass
-from typing import List, Any, Optional, Union
+from typing import List, Any, Optional, Union, Dict
 from abc import ABC
 
 # 3rd Party Libraries
@@ -48,6 +50,42 @@ class Resource(ABC):
             return NotImplemented
         else:
             return self.id == other.id
+
+    def to_json(self) -> str:
+        """
+        JSON serialize a DA Resource instance.
+
+        Provides serialization handling for objects with datetimes,
+        `UnhydratedField` instance, and child records.
+
+        Returns:
+            (str): A json-serialized represntation of the resource.
+        """
+        dict_form = dataclasses.asdict(self)
+
+        def recursive_serialize(item: Union[List, Dict]) -> Union[List, Dict]:
+            if isinstance(item, list):
+                return [recursive_serialize(sub_item) for sub_item in item]
+
+            elif isinstance(item, dict):
+                for key, value in item.items():
+
+                    if value is UnhydratedField:
+                        item[key] = "Unhydrated Field"
+
+                    elif isinstance(value, date):
+                        value: datetime.date
+                        item[key] = value.isoformat()
+
+                    elif isinstance(value, list) or isinstance(value, dict):
+                        item[key] = recursive_serialize(value)
+
+                return item
+
+        dict_form = recursive_serialize(dict_form)
+
+        return json.dumps(dict_form)
+
 
 
 @dataclass(eq=False)
@@ -375,7 +413,7 @@ class Coverage(Resource, MatchingMixin, HydrateMixin):
     name: str
     uri: str
     value: Union[str, UnhydratedField] = UnhydratedField
-    parent: Union[Any, UnhydratedField, None] = UnhydratedField
+    parent: Union[Coverage, UnhydratedField, None] = UnhydratedField
     children: Union[list, UnhydratedField] = UnhydratedField
     endpoint: str = "coverage"
 
@@ -614,7 +652,7 @@ class Document(Resource, MatchingMixin, HydrateMixin, TimestampsMixin):
 
     # Optional Fields
     source: Union[str, UnhydratedField] = UnhydratedField
-    type: Union[Type, UnhydratedField] = UnhydratedField
+    type: Union[List[Type], UnhydratedField] = UnhydratedField
     rights: Union[Right, UnhydratedField] = UnhydratedField
     pdf_generated_at: Union[str, UnhydratedField] = UnhydratedField
     date_range_start: Union[str, date, UnhydratedField] = UnhydratedField
