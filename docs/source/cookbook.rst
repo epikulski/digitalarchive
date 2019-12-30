@@ -99,3 +99,12 @@ accessed. Translations and transcripts are typically presented as HTML files, bu
     'TranslationFile_208406.html'
     >>> with open(translation.filename, "wb") as outfile:
     ...     outfile.write(translation.html)
+
+Serialize and dump a document to the filesystem.
+-----------------------------------
+    >>> from digitalarchive import Document
+    >>> chernobyl_doc = Document.match(id="208406").first()
+    >>> chernobyl_doc.hydrate()
+    >>> chernobyl_doc = chernobyl_doc.to_json()
+    >>> with open("/tmp/doc.json", "w") as f:
+    >>>    f.write(chernobl_doc)
