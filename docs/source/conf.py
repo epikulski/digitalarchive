@@ -19,11 +19,11 @@ sys.path.insert(0, os.path.abspath('../..'))
 # -- Project information -----------------------------------------------------
 
 project = 'DigitalArchive'
-copyright = '2019, Evan Pikulski'
+copyright = '2020, Evan Pikulski'
 author = 'Evan Pikulski'
 
 # The full version, including alpha/beta/rc tags
-release = '0.1.8'
+release = '0.1.9'
 
 
 # -- General configuration ---------------------------------------------------
