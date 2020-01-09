@@ -35,7 +35,7 @@ Usage
 >>> document = test_doc.transcripts[0].html
 
 # Pull the metadata and other assets for an entire resultset.
->>> chernobyl_docs = digitalarchive.Document.match(name="chernobyl")
+>>> chernobyl_docs = digitalarchive.Document.match(title="chernobyl")
 >>> chernobyl_docs.hydrate()
 >>> chernobyl_docs.all()
 
