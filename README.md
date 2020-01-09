@@ -22,7 +22,7 @@ Usage
 >>> import digitalarchive
 
 # Search for documents:
->>> soviet_docs = digitalarchive.Document.match(name="soviet").all()
+>>> soviet_docs = digitalarchive.Document.match(title="soviet").all()
 
 # Collections and other resource types are also searchable.
 >> soviet_collections = digitalarchive.Collection.match(name="soviet")
