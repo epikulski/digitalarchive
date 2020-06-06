@@ -905,7 +905,7 @@ class Document(Resource, MatchingMixin, HydrateMixin, TimestampsMixin):
                 raise exceptions.MalformedDateSearch
 
             # If something else passed as keyword, bail out.
-            elif not (isinstance(search_date, str) or isinstance(search_date, date)):
+            elif not (isinstance(search_date, str) or isinstance(search_date, date) or (search_date is None)):
                 logging.error("[!] Dates must be type str or datetime.date")
                 raise exceptions.MalformedDateSearch
 

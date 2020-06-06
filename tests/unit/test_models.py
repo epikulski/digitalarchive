@@ -429,6 +429,14 @@ class TestDocument:
                 {"start_date": models.UnhydratedField}
             )
 
+    def test_process_date_search_none_date(self):
+        result = models.Document._process_date_searches(
+            {"start_date": None, "end_date": None}
+        )
+        for value in result.values():
+            assert value is None
+
+
     def test_process_related_model_searches_too_many_params(self):
         with pytest.raises(exceptions.InvalidSearchFieldError):
             models.Document._process_related_model_searches(
