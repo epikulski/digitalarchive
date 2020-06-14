@@ -651,19 +651,6 @@ class Document(Resource, MatchingMixin, HydrateMixin, TimestampsMixin):
         day = int(doc_date[-2:])
         return date(year, month, day)
 
-    def __post_init__(self):
-        """Parse lists of child objects."""
-
-        # Parse related records
-        self._parse_child_records()
-
-        # Process DA timestamps.
-        self._process_timestamps()
-
-        # Process the date_range_start field to facilitate searches.
-        if isinstance(self.date_range_start, str):
-            self.date_range_start = self._parse_date_range_start(self.date_range_start)
-
     @classmethod
     def match(cls, **kwargs) -> matching.ResourceMatcher:
         """
@@ -804,56 +791,6 @@ class Document(Resource, MatchingMixin, HydrateMixin, TimestampsMixin):
             [media_file.hydrate() for media_file in self.media_files]
             [collection.hydrate() for collection in self.collections]
 
-    def _parse_child_records(self):
-        child_fields = {
-            "subjects": Subject,
-            "transcripts": Transcript,
-            "media_files": MediaFile,
-            "languages": Language,
-            "creators": Contributor,
-            "collections": Collection,
-            "attachments": Document,
-            "links": Document,
-            "publishers": Publisher,
-            "translations": Translation,
-            "contributors": Contributor,
-            "original_coverages": Coverage,
-            "repositories": Repository,
-            "classifications": Classification,
-            "donors": Donor,
-            "type": Type,
-            "rights": Right,
-        }
-
-        # If we are dealing with an unhydrated record, don't attempt to process child records.
-        for field in child_fields:
-            if self.__getattribute__(field) is UnhydratedField:
-                continue
-
-            # If we are dealing with a dict, parse it and update self.
-            elif isinstance(self.__getattribute__(field), dict):
-                parsed_resource = child_fields[field](**self.__getattribute__(field))
-                setattr(self, field, parsed_resource)
-
-            # Rights are the only field that isn't a list, so we have special handling here to bail out of loop.
-            elif isinstance(self.__getattribute__(field), Right):
-                continue
-
-            # # If record is hydrated, transform child records to appropriate model.
-            # Check if list is empty, skip if yes.
-            elif len(self.__getattribute__(field)) == 0:
-                pass
-
-            # If field is a list of dicts, transform those dicts to models and update self.
-            else:
-                sample_resource = self.__getattribute__(field)[0]
-                if isinstance(sample_resource, dict):
-                    parsed_resources = [
-                        child_fields[field](**resource)
-                        for resource in self.__getattribute__(field)
-                    ]
-                    setattr(self, field, parsed_resources)
-
     @staticmethod
     def _process_date_searches(query: dict) -> dict:
         """Run formatting and type checks against  date search fields."""
@@ -881,16 +818,6 @@ class Document(Resource, MatchingMixin, HydrateMixin, TimestampsMixin):
                 logging.error("[!] Invalid date string! Format is: YYYYMMDD")
                 raise exceptions.MalformedDateSearch
 
-            # If something else passed as keyword, bail out.
-            elif not (
-                isinstance(search_date, str)
-                or isinstance(search_date, date)
-                or (search_date is None)
-            ):
-                logging.error("[!] Dates must be type str or datetime.date")
-                raise exceptions.MalformedDateSearch
-
-        # Return the reformatted query
         return query
 
     @staticmethod
@@ -1008,18 +935,6 @@ class Theme(Resource, HydrateMixin):
 
     # Private fields.
     endpoint: ClassVar[str] = "theme"
-
-    def __post_init__(self):
-        """Parse out any child collections that were passed"""
-        if self.featured_collections is not None:
-            parsed_collections = []
-            for collection in self.featured_collections:
-                if isinstance(collection, Collection):
-                    parsed_collections.append(collection)
-                else:
-                    parsed_collections.append(Collection(**collection))
-
-            self.featured_collections = parsed_collections
 
     def pull(self):
         """
