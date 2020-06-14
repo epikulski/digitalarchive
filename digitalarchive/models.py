@@ -43,41 +43,6 @@ class Resource(pydantic.BaseModel, ABC):
         else:
             return self.id == other.id
 
-    def to_json(self) -> str:
-        """
-        JSON serialize a DA Resource instance.
-
-        Provides serialization handling for objects with datetimes,
-        `UnhydratedField` instance, and child records.
-
-        Returns:
-            (str): A json-serialized represntation of the resource.
-        """
-        dict_form = dataclasses.asdict(self)
-
-        def recursive_serialize(item: Union[List, Dict]) -> Union[List, Dict]:
-            if isinstance(item, list):
-                return [recursive_serialize(sub_item) for sub_item in item]
-
-            elif isinstance(item, dict):
-                for key, value in item.items():
-
-                    if value is UnhydratedField:
-                        item[key] = "Unhydrated Field"
-
-                    elif isinstance(value, date):
-                        value: datetime.date
-                        item[key] = value.isoformat()
-
-                    elif isinstance(value, list) or isinstance(value, dict):
-                        item[key] = recursive_serialize(value)
-
-                return item
-
-        dict_form = recursive_serialize(dict_form)
-
-        return json.dumps(dict_form)
-
 
 class MatchingMixin:
     """Abstract parent for Resources that can be searched against."""
@@ -138,26 +103,6 @@ class HydrateMixin:
 
         # Re-initialize the object.
         self.__init__(**hydrated_fields)
-
-
-class TimestampsMixin:
-    """Mixin for resources that have publication timestamp metadata."""
-
-    # pylint: disable=too-few-public-methods
-
-    def _process_timestamps(self):
-        # Turn date fields from strings into datetimes.
-        datetime_fields = [
-            "source_created_at",
-            "source_updated_at",
-            "first_published_at",
-        ]
-
-        for field in datetime_fields:
-            if isinstance(self.__getattribute__(field), str):
-                setattr(
-                    self, field, datetime.fromisoformat(self.__getattribute__(field))
-                )
 
 
 class Subject(Resource, MatchingMixin, HydrateMixin):
@@ -268,10 +213,6 @@ class Transcript(Asset):
     pdf: Optional[bytes] = None
     raw: Union[str, bytes, None] = None
 
-    def __post_init__(self):
-        """See note on Asset __post_init__ function."""
-        pass  # pylint: disable=unnecessary-pass
-
 
 class Translation(Asset):
     """
@@ -296,9 +237,6 @@ class Translation(Asset):
     html: Optional[str] = None
     pdf: Optional[bytes] = None
     raw: Optional[str] = None
-
-    def __post_init__(self):
-        self.language = Language(**self.language)
 
 
 class MediaFile(Asset):
@@ -374,9 +312,7 @@ class Coverage(Resource, MatchingMixin, HydrateMixin):
     name: str
     uri: str
     value: Optional[str] = None
-    parent: Union[
-        Coverage, List, None
-    ] = None  # This endpoint is inconsistent. parent is either a dict or a empty list.
+    parent: Union[Coverage, List, None] = None  # Inconsistent endpoint. Parent is either a dict or a empty list.
     children: Optional[List[Coverage]] = None
     endpoint: ClassVar[str] = "coverage"
 
@@ -386,23 +322,11 @@ class Coverage(Resource, MatchingMixin, HydrateMixin):
             return None
         return parent
 
-    def __post_init__(self):
-        """
-        Standardize output of coverage data across differnet DA endpoints.
-
-        The DA returns dicts for parent in some cases, empty lists in others. We standardize on None. We also parse the
-        children and parent fields, if they are present.
-        """
-
-        # If children are unhydrated or already parsed, don't attempt to parse
-        if not (self.children is None or isinstance(self.children[0], Coverage)):
-            self.children = [Coverage(**child) for child in self.children]
-
 
 Coverage.update_forward_refs()
 
 
-class Collection(Resource, MatchingMixin, HydrateMixin, TimestampsMixin):
+class Collection(Resource, MatchingMixin, HydrateMixin):
     """
     A collection of Documents on a single topic
 
@@ -520,7 +444,7 @@ class Classification(Resource):
     name: str
 
 
-class Document(Resource, MatchingMixin, HydrateMixin, TimestampsMixin):
+class Document(Resource, MatchingMixin, HydrateMixin):
     """
     A Document corresponding to a single record page on digitalarchive.wilsoncenter.org.
 
