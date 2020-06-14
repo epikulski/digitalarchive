@@ -4,14 +4,11 @@ python:
 - 3.7-dev
 - '3.8'
 - 3.8-dev
-before_install:
-  - python --version
-  - pip install -U pip
 install:
 - pip install -r requirements.txt
 script:
-- python3 -m pytest --cov-report term --cov=digitalarchive
-- python3 -m coverage report --fail-under=100
+- py.test --cov-report term --cov=digitalarchive
+- coverage report --fail-under=100
 after_success:
 - codecov
 deploy:
