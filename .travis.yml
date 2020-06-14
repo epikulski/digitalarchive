@@ -7,12 +7,10 @@ python:
 before_install:
   - python --version
   - pip install -U pip
-  - pip install -U pytest
-  - pip install codecov coverage
 install:
 - pip install -r requirements.txt
 script:
-- py.test --cov-report term --cov=digitalarchive
+- pytest --cov-report term --cov=digitalarchive
 - coverage report --fail-under=100
 after_success:
 - codecov

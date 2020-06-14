@@ -4,3 +4,6 @@ idna==2.9
 pydantic==1.5.1
 requests==2.23.0
 urllib3==1.25.9
+pytest
+pytest-cov
+coverage
