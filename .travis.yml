@@ -4,6 +4,11 @@ python:
 - 3.7-dev
 - '3.8'
 - 3.8-dev
+before_install:
+  - python --version
+  - pip install -U pip
+  - pip install -U pytest
+  - pip install codecov coverage
 install:
 - pip install -r requirements.txt
 script:
