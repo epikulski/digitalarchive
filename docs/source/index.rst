@@ -28,7 +28,7 @@ Find documents by keyword:
 
     >>> from digitalarchive import Subject
     >>> Subject.match(name="Tiananmen Square Incident").first()
-    Subject(id='2229', name='China--History--Tiananmen Square Incident, 1989', uri='/srv/subject/2229.json', value='China--History--Tiananmen Square Incident, 1989', endpoint='subject')
+    Subject(id='2229', name='China--History--Tiananmen Square Incident, 1989', value='China--History--Tiananmen Square Incident, 1989', uri='/srv/subject/2229.json')
 
 Discover collections of related documents:
 
@@ -36,7 +36,7 @@ Discover collections of related documents:
     >>> collection = Collection.match(name="Local Nationalism in Xinjiang").first()
     >>> docs = Document.match(collections=[collection])
     >>> for doc in docs.all():
-    ...     print doc.title
+    ...     print(doc.title)
     Memorandum on a Discussion held by the Consul-General of the USSR in Ürümchi, G.S. DOBASHIN, with the Secretary of the Party Committee of the Xinjiang Uyghur Autonomous Region, Comrade LÜ JIANREN
     Memorandum on a Discussion held by the Consul-General of the USSR in Ürümchi, G.S. DOBASHIN, with Deputy Chairman of the People’s Committee of the Xinjiang Uyghur Autonomous Region, Comrade XIN LANTING
     Memorandum of a Discussion held by USSR Consul-General in Ürümchi, G S. Dobashin, with First Secretary of the Party Committee of the Xinjiang Uyghur Autonomous Region, Comrade Wang Enmao, and Chair of the People’s Committee, Comrade S. Äzizov
