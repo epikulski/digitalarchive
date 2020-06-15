@@ -21,7 +21,7 @@ REQUIRES_PYTHON = ">=3.7.0"
 VERSION = "0.1.10"
 
 # Required 3rd party libraries.
-REQUIRED = ["requests"]
+REQUIRED = ["requests", "pydantic"]
 
 # Optional Packages
 EXTRAS = {}
