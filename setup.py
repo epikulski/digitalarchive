@@ -18,7 +18,7 @@ URL = "https://github.com/epikulski/digitalarchive"
 EMAIL = "epikulsk@gmail.com"
 AUTHOR = "Evan Pikulski"
 REQUIRES_PYTHON = ">=3.7.0"
-VERSION = "0.1.10"
+VERSION = "0.1.11"
 
 # Required 3rd party libraries.
 REQUIRED = ["requests", "pydantic"]
