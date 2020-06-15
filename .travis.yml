@@ -5,7 +5,7 @@ python:
 install:
 - pip install -r requirements.txt
 script:
-- py.test --cov-report term --cov=digitalarchive
+- py.test --cov-report term --cov=digitalarchive --doctest-glob="*.rst"
 - coverage report --fail-under=100
 after_success:
 - codecov

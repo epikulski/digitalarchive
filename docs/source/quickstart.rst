@@ -31,14 +31,12 @@ exposes a :meth:`~digitalarchive.matching.ResourceMatcher.first()` method for to
 
     >>> from digitalarchive import Document
     >>> docs = Document.match(description="Cuban Missile Crisis")
-    >>> docs.first()
-    Document(id='177859', title="From the Journal of S.M. Kudryavtsev, 'Record of a Conversation with Prime Minister of Cuba Fidel Castro Ruz, 21 January 1961'")
-    >>> len(docs.all())
-    656
+    >>> docs.first().title
+    "From the Journal of S.M. Kudryavtsev, 'Record of a Conversation with Prime Minister of Cuba Fidel Castro Ruz, 21 January 1961'"
 
 Searching for a record by its ``id`` always returns a single record and ignores any other keyword arguments.
 
-    >>>  from digitalarchive import Document
+    >>> from digitalarchive import Document
     >>> test_search = Document.match(id="175898")
     >>> test_search.count
     1
@@ -55,7 +53,7 @@ keyword, or both.
     >>> from digitalarchive import Document
     >>> from datetime import date
     >>> Document.match(start_date=date(1989, 4, 15), end_date=date(1989, 5, 4))
-    ResourceMatcher(model=<class 'digitalarchive.models.Document'>, query={'start_date': '19890415', 'end_date': '19890504', 'model': 'Record', 'itemsPerPage': 200, 'q': ''}, count=15)
+    ResourceMatcher(model=<class 'digitalarchive.models.Document'>, query={'start_date': '19890415', 'end_date': '19890504', 'model': 'Record', 'q': '', 'itemsPerPage': 200}, count=22)
 
 Searches can also be limited to records contained within a specific collection, subject, or other container. Matches for
 Documents can be filtered by one or more ``Collection``, ``Repository``, ``Coverage``, ``Subject``, ``Contributor``,
@@ -64,7 +62,7 @@ and ``Donor`` instances:
     >>> from digitalarchive import Collection, Document
     >>> xinjiang_collection = Collection.match(id="491").first()
     >>> xinjiang_collection.name
-    “Local Nationalism" in Xinjiang, 1957-1958
+    '“Local Nationalism" in Xinjiang, 1957-1958'
     >>> docs = Document.match(collections=[xinjiang_collection])
     >>> docs.count
     9
@@ -73,13 +71,13 @@ Hydrating Search Results
 ------------------------
 
 Most search results return "unhydrated" instances of resources with incomplete metadata. All attributes that are not yet
-available are represented by an alias of :class:`~digitalarchive.models.UnhydratedField`. Use the
+available are represented by :class:`NoneType`. Use the
 :meth:`~digitalarchive.models.Document.hydrate()` method to download the full metadata for a resource.
 
     >>> from digitalarchive import Document
     >>> test_doc = Document.match(description="Vietnam War").first()
-    >>> test_doc.source
-    <class 'digitalarchive.models.UnhydratedField'>
+    >>> test_doc.source is None
+    True
     >>> test_doc.hydrate()
     >>> test_doc.source
     'AVPRF f. 0100, op. 34, 1946, p. 253, d. 18. Obtained and translated for CWIHP by Austin Jersild.'
@@ -91,7 +89,6 @@ This operation can take some time for large result sets.
     >>> from digitalarchive import Document
     >>> docs = Document.match(description="Taiwan Strait Crisis")
     >>> docs.hydrate()
-    >>> docs.list[0].source
 
 When hydrating a result set, it it is also possible to recursively hydrate any child records (translations, transcripts,
 etc.) in the result set by setting the ``recurse`` parameter of
