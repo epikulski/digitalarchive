@@ -11,24 +11,21 @@ import json
 import logging
 import copy
 from datetime import datetime, date
-from dataclasses import dataclass
-from typing import List, Any, Optional, Union, Dict
+from typing import List, Any, Optional, Union, Dict, ClassVar
 from abc import ABC
 
+# 3rd Party Libraries
+import pydantic
+
 # Application Modules
+from pydantic import validator
+
 import digitalarchive.matching as matching
 import digitalarchive.api as api
 import digitalarchive.exceptions as exceptions
 
 
-class UnhydratedField:
-    """A field whose content is unknown until its parent :class:`_Resource` has been hydrated."""
-
-    pass
-
-
-@dataclass(eq=False)
-class Resource(ABC):
+class Resource(pydantic.BaseModel, ABC):
     """
     Abstract parent for all DigitalArchive objects.
 
@@ -46,44 +43,7 @@ class Resource(ABC):
         else:
             return self.id == other.id
 
-    def to_json(self) -> str:
-        """
-        JSON serialize a DA Resource instance.
 
-        Provides serialization handling for objects with datetimes,
-        `UnhydratedField` instance, and child records.
-
-        Returns:
-            (str): A json-serialized represntation of the resource.
-        """
-        dict_form = dataclasses.asdict(self)
-
-        def recursive_serialize(item: Union[List, Dict]) -> Union[List, Dict]:
-            if isinstance(item, list):
-                return [recursive_serialize(sub_item) for sub_item in item]
-
-            elif isinstance(item, dict):
-                for key, value in item.items():
-
-                    if value is UnhydratedField:
-                        item[key] = "Unhydrated Field"
-
-                    elif isinstance(value, date):
-                        value: datetime.date
-                        item[key] = value.isoformat()
-
-                    elif isinstance(value, list) or isinstance(value, dict):
-                        item[key] = recursive_serialize(value)
-
-                return item
-
-        dict_form = recursive_serialize(dict_form)
-
-        return json.dumps(dict_form)
-
-
-
-@dataclass(eq=False)
 class MatchingMixin:
     """Abstract parent for Resources that can be searched against."""
 
@@ -97,7 +57,7 @@ class MatchingMixin:
 
         # Check that we no invalid search terms were passed.
         for key in kwargs:
-            if key not in cls.__dataclass_fields__.keys():
+            if key not in cls.__fields__.keys():
                 raise exceptions.InvalidSearchFieldError
 
         # Prepare the "term" search field.
@@ -114,7 +74,6 @@ class MatchingMixin:
         return matching.ResourceMatcher(cls, **kwargs)
 
 
-@dataclass(eq=False)
 class HydrateMixin:
     """Mixin for resources that can be individually accessed and hydrated."""
 
@@ -136,34 +95,16 @@ class HydrateMixin:
 
         # Merge fields
         for key, value in unhydrated_fields.items():
-            if hydrated_fields.get(key) is UnhydratedField:
+            if (
+                hydrated_fields.get(key) is None
+                and unhydrated_fields.get(key) is not None
+            ):
                 hydrated_fields[key] = value
 
         # Re-initialize the object.
         self.__init__(**hydrated_fields)
 
 
-class TimestampsMixin:
-    """Mixin for resources that have publication timestamp metadata."""
-
-    # pylint: disable=too-few-public-methods
-
-    def _process_timestamps(self):
-        # Turn date fields from strings into datetimes.
-        datetime_fields = [
-            "source_created_at",
-            "source_updated_at",
-            "first_published_at",
-        ]
-
-        for field in datetime_fields:
-            if isinstance(self.__getattribute__(field), str):
-                setattr(
-                    self, field, datetime.fromisoformat(self.__getattribute__(field))
-                )
-
-
-@dataclass(eq=False)
 class Subject(Resource, MatchingMixin, HydrateMixin):
     """
     A historical topic to which documents can be related.
@@ -178,14 +119,13 @@ class Subject(Resource, MatchingMixin, HydrateMixin):
     name: str
 
     # Optional fields
-    value: Union[str, UnhydratedField] = UnhydratedField
-    uri: Union[str, UnhydratedField] = UnhydratedField
+    value: Optional[str] = None
+    uri: Optional[str] = None
 
     # Private fields
-    endpoint: str = "subject"
+    endpoint: ClassVar[str] = "subject"
 
 
-@dataclass(eq=False)
 class Language(Resource):
     """
     The original language of a resource.
@@ -195,10 +135,9 @@ class Language(Resource):
         name (str): The ISO language name for the language.
     """
 
-    name: Union[str, UnhydratedField] = UnhydratedField
+    name: Optional[str] = None
 
 
-@dataclass(eq=False)
 class Asset(Resource, ABC, HydrateMixin):
     """
     Abstract parent for Translations, Transcriptions, and MediaFiles.
@@ -217,19 +156,10 @@ class Asset(Resource, ABC, HydrateMixin):
     source_created_at: str
     source_updated_at: str
 
-    def __post_init__(self):
-        """
-        Instantiate some required fields for child assets.
-
-        This is awkward but necessary because dataclasses don't let
-        you have non-default arguments in a child class. However,
-        the MediaFile record type has a 'path' field instead of a 'url' field,
-        which makes inheritance of a shared hydrate method awkward.
-        """
-        self.url = UnhydratedField
-        self.raw = UnhydratedField
-        self.pdf = UnhydratedField
-        self.html = UnhydratedField
+    url: Optional[str] = None
+    raw: Optional[str] = None
+    pdf: Optional[str] = None
+    html: Optional[str] = None
 
     def hydrate(self):
         """Populate all unhydrated fields of a :class:`digitalarchive.models._Asset`."""
@@ -261,7 +191,6 @@ class Asset(Resource, ABC, HydrateMixin):
             )
 
 
-@dataclass(eq=False)
 class Transcript(Asset):
     """A transcript of a document in its original language.
 
@@ -280,16 +209,11 @@ class Transcript(Asset):
     """
 
     url: str
-    html: Union[str, UnhydratedField] = UnhydratedField
-    pdf: Union[bytes, UnhydratedField] = UnhydratedField
-    raw: Union[str, bytes, UnhydratedField] = UnhydratedField
-
-    def __post_init__(self):
-        """See note on Asset __post_init__ function."""
-        pass  # pylint: disable=unnecessary-pass
+    html: Optional[str] = None
+    pdf: Optional[bytes] = None
+    raw: Union[str, bytes, None] = None
 
 
-@dataclass(eq=False)
 class Translation(Asset):
     """
     A translation of a Document into a another language.
@@ -310,15 +234,11 @@ class Translation(Asset):
 
     url: str
     language: Union[Language, dict]
-    html: Union[str, UnhydratedField, None] = UnhydratedField
-    pdf: Union[bytes, UnhydratedField, None] = UnhydratedField
-    raw: Union[str, UnhydratedField] = UnhydratedField
-
-    def __post_init__(self):
-        self.language = Language(**self.language)
+    html: Optional[str] = None
+    pdf: Optional[bytes] = None
+    raw: Optional[str] = None
 
 
-@dataclass(eq=False)
 class MediaFile(Asset):
     """
     An original scan of a Document.
@@ -336,14 +256,12 @@ class MediaFile(Asset):
     """
 
     path: str
-    raw: Union[str, UnhydratedField] = UnhydratedField
-    pdf: Union[str, UnhydratedField] = UnhydratedField
 
-    def __post_init__(self):
-        self.url: str = self.path
+    def __init__(self, **data):
+        data["url"] = data.get("path")
+        super().__init__(**data)
 
 
-@dataclass(eq=False)
 class Contributor(Resource, MatchingMixin, HydrateMixin):
     """
     An individual person or organization that contributed to the creation of the document.
@@ -358,12 +276,11 @@ class Contributor(Resource, MatchingMixin, HydrateMixin):
     """
 
     name: str
-    value: Union[UnhydratedField, str] = UnhydratedField
-    uri: Union[UnhydratedField, str] = UnhydratedField
-    endpoint: str = "contributor"
+    value: Optional[str] = None
+    uri: Optional[str] = None
+    endpoint: ClassVar[str] = "contributor"
 
 
-@dataclass(eq=False)
 class Donor(Resource):
     """
     An entity whose resources helped publish or translate a document.
@@ -374,10 +291,9 @@ class Donor(Resource):
     """
 
     name: str
-    endpoint: str = "donor"
+    endpoint: ClassVar[str] = "donor"
 
 
-@dataclass(eq=False)
 class Coverage(Resource, MatchingMixin, HydrateMixin):
     """
     A geographical area referenced by a Document.
@@ -395,38 +311,22 @@ class Coverage(Resource, MatchingMixin, HydrateMixin):
 
     name: str
     uri: str
-    value: Union[str, UnhydratedField] = UnhydratedField
-    parent: Union[Coverage, UnhydratedField, None] = UnhydratedField
-    children: Union[list, UnhydratedField] = UnhydratedField
-    endpoint: str = "coverage"
+    value: Optional[str] = None
+    parent: Union[Coverage, List, None] = None  # Inconsistent endpoint. Parent is either a dict or a empty list.
+    children: Optional[List[Coverage]] = None
+    endpoint: ClassVar[str] = "coverage"
 
-    def __post_init__(self):
-        """
-        Standardize output of coverage data across differnet DA endpoints.
-
-        The DA returns dicts for parent in some cases, empty lists in others. We standardize on None. We also parse the
-        children and parent fields, if they are present.
-        """
-        if isinstance(self.parent, list):
-            self.parent = None
-
-        # Parse the parent, if it is present.
-        if not (
-            isinstance(self.parent, Coverage)
-            or self.parent is None
-            or self.parent is UnhydratedField
-        ):
-            self.parent = Coverage(**self.parent)
-
-        # If children are unhydrated or already parsed, don't attempt to parse
-        if not (
-            self.children is UnhydratedField or isinstance(self.children[0], Coverage)
-        ):
-            self.children = [Coverage(**child) for child in self.children]
+    @validator("parent")
+    def _process_parent(cls, parent):
+        if isinstance(parent, list):
+            return None
+        return parent
 
 
-@dataclass(eq=False)
-class Collection(Resource, MatchingMixin, HydrateMixin, TimestampsMixin):
+Coverage.update_forward_refs()
+
+
+class Collection(Resource, MatchingMixin, HydrateMixin):
     """
     A collection of Documents on a single topic
 
@@ -454,32 +354,27 @@ class Collection(Resource, MatchingMixin, HydrateMixin, TimestampsMixin):
     slug: str
 
     # Optional Fields
-    uri: Union[str, UnhydratedField] = UnhydratedField
-    parent: Optional[
-        Any
-    ] = UnhydratedField  # TODO: This should be Collection, figure out how to do it.
-
-    model: Union[str, UnhydratedField] = UnhydratedField
-    value: Union[str, UnhydratedField] = UnhydratedField
-    description: Union[str, UnhydratedField] = UnhydratedField
-    short_description: Union[str, UnhydratedField] = UnhydratedField
-    main_src: Union[str, UnhydratedField] = UnhydratedField
-    thumb_src: Union[str, UnhydratedField] = UnhydratedField
-    no_of_documents: Union[str, UnhydratedField] = UnhydratedField
-    is_inactive: Union[str, UnhydratedField] = UnhydratedField
-    source_created_at: Union[str, UnhydratedField, datetime] = UnhydratedField
-    source_updated_at: Union[str, UnhydratedField, datetime] = UnhydratedField
-    first_published_at: Union[str, UnhydratedField, datetime] = UnhydratedField
+    uri: Optional[str] = None
+    parent: Optional[Collection] = None
+    model: Optional[str] = None
+    value: Optional[str] = None
+    description: Optional[str] = None
+    short_description: Optional[str] = None
+    main_src: Optional[str] = None
+    thumb_src: Optional[str] = None
+    no_of_documents: Optional[str] = None
+    is_inactive: Optional[str] = None
+    source_created_at: Optional[datetime] = None
+    source_updated_at: Optional[datetime] = None
+    first_published_at: Optional[datetime] = None
 
     # Internal Fields
-    endpoint: str = "collection"
-
-    def __post_init__(self):
-        # Turn date fields from strings into datetimes.
-        self._process_timestamps()
+    endpoint: ClassVar[str] = "collection"
 
 
-@dataclass(eq=False)
+Collection.update_forward_refs()
+
+
 class Repository(Resource, MatchingMixin, HydrateMixin):
     """
     The archive or library possessing the original, physical Document.
@@ -492,12 +387,11 @@ class Repository(Resource, MatchingMixin, HydrateMixin):
     """
 
     name: str
-    uri: Union[str, UnhydratedField] = UnhydratedField
-    value: Union[str, UnhydratedField] = UnhydratedField
-    endpoint: str = "repository"
+    uri: Optional[str] = None
+    value: Optional[str] = None
+    endpoint: ClassVar[str] = "repository"
 
 
-@dataclass(eq=False)
 class Publisher(Resource):
     """
     An organization involved in the publication of the document.
@@ -509,10 +403,9 @@ class Publisher(Resource):
 
     name: str
     value: str
-    endpoint: str = "publisher"
+    endpoint: ClassVar[str] = "publisher"
 
 
-@dataclass(eq=False)
 class Type(Resource):
     """
     The type of a document (memo, report, etc).
@@ -525,7 +418,6 @@ class Type(Resource):
     name: str
 
 
-@dataclass(eq=False)
 class Right(Resource):
     """
     A copyright notice attached to the Document.
@@ -540,7 +432,6 @@ class Right(Resource):
     rights: str
 
 
-@dataclass(eq=False)
 class Classification(Resource):
     """
     A classification marking applied to the original Document.
@@ -553,8 +444,7 @@ class Classification(Resource):
     name: str
 
 
-@dataclass(eq=False)
-class Document(Resource, MatchingMixin, HydrateMixin, TimestampsMixin):
+class Document(Resource, MatchingMixin, HydrateMixin):
     """
     A Document corresponding to a single record page on digitalarchive.wilsoncenter.org.
 
@@ -625,63 +515,65 @@ class Document(Resource, MatchingMixin, HydrateMixin, TimestampsMixin):
     # Required Fields
     uri: str
     title: str
-    description: str
     doc_date: str
     frontend_doc_date: str
     slug: str
-    source_created_at: str
-    source_updated_at: str
-    first_published_at: str
+    source_created_at: datetime
+    source_updated_at: datetime
+    first_published_at: datetime
 
     # Optional Fields
-    source: Union[str, UnhydratedField] = UnhydratedField
-    type: Union[List[Type], UnhydratedField] = UnhydratedField
-    rights: Union[Right, UnhydratedField] = UnhydratedField
-    pdf_generated_at: Union[str, UnhydratedField] = UnhydratedField
-    date_range_start: Union[str, date, UnhydratedField] = UnhydratedField
-    sort_string_by_coverage: Union[str, UnhydratedField] = UnhydratedField
+    description: Optional[str] = None
+    source: Optional[str] = None
+    type: Optional[List[Type]] = None
+    rights: Optional[Right] = None
+    pdf_generated_at: Optional[datetime] = None
+    date_range_start: Optional[date] = None
+    sort_string_by_coverage: Optional[str] = None
     main_src: Optional[
         Any
-    ] = UnhydratedField  # TODO: Never seen one of these in the while, so not sure how to handle.
-    model: Union[str, UnhydratedField] = UnhydratedField
+    ] = None  # TODO: Never seen one of these in the while, so not sure how to handle.
+    model: Optional[str] = None
 
     # Optional Lists:
 
-    donors: Union[List[Donor], UnhydratedField] = UnhydratedField
-    subjects: Union[List[Subject], UnhydratedField] = UnhydratedField
-    transcripts: Union[List[Transcript], UnhydratedField] = UnhydratedField
-    translations: Union[List[Translation], UnhydratedField] = UnhydratedField
-    media_files: Union[List[MediaFile], UnhydratedField] = UnhydratedField
-    languages: Union[List[Language], UnhydratedField] = UnhydratedField
-    contributors: Union[List[Contributor], UnhydratedField] = UnhydratedField
-    creators: Union[List[Contributor], UnhydratedField] = UnhydratedField
-    original_coverages: Union[List[Coverage], UnhydratedField] = UnhydratedField
-    collections: Union[List[Collection], UnhydratedField] = UnhydratedField
-    attachments: Union[
-        List[Any], UnhydratedField
-    ] = UnhydratedField  # TODO: Should be "document" -- fix.
-    links: Union[
-        List[Any], UnhydratedField
-    ] = UnhydratedField  # TODO: Should be "document" -- fix.
-    repositories: Union[List[Repository], UnhydratedField] = UnhydratedField
-    publishers: Union[List[Publisher], UnhydratedField] = UnhydratedField
-    classifications: Union[List[Classification], UnhydratedField] = UnhydratedField
+    donors: Optional[List[Donor]] = None
+    subjects: Optional[List[Subject]] = None
+    transcripts: Optional[List[Transcript]] = None
+    translations: Optional[List[Translation]] = None
+    media_files: Optional[List[MediaFile]] = None
+    languages: Optional[List[Language]] = None
+    contributors: Optional[List[Contributor]] = None
+    creators: Optional[List[Contributor]] = None
+    original_coverages: Optional[List[Coverage]] = None
+    collections: Optional[List[Collection]] = None
+    attachments: Optional[List[Any]] = None  # TODO: Should be "document" -- fix.
+    links: Optional[List[Any]] = None
+    repositories: Optional[List[Repository]] = None
+    publishers: Optional[List[Publisher]] = None
+    classifications: Optional[List[Classification]] = None
 
     # Private properties
-    endpoint: str = "record"
+    endpoint: ClassVar[str] = "record"
 
-    def __post_init__(self):
-        """Parse lists of child objects."""
+    @validator("date_range_start", pre=True)
+    def _parse_date_range_start(cls, doc_date) -> date:
+        """Transform a DA-style date string to a Python datetime."""
+        if isinstance(doc_date, date):
+            return doc_date
+        elif doc_date is None:
+            return doc_date
 
-        # Parse related records
-        self._parse_child_records()
+        # Try to parse it as a normal one
+        try:
+            return date.fromisoformat(doc_date)
+        except ValueError:
+            pass
 
-        # Process DA timestamps.
-        self._process_timestamps()
-
-        # Process the date_range_start field to facilitate searches.
-        if isinstance(self.date_range_start, str):
-            self.date_range_start = self._parse_date_range_start(self.date_range_start)
+        year = int(doc_date[:4])
+        month = int(doc_date[4:6])
+        day = int(doc_date[-2:])
+        return date(year, month, day)
 
     @classmethod
     def match(cls, **kwargs) -> matching.ResourceMatcher:
@@ -737,10 +629,11 @@ class Document(Resource, MatchingMixin, HydrateMixin, TimestampsMixin):
 
         # Check that search keywords are valid.
         allowed_search_fields = [
-            *cls.__dataclass_fields__.keys(),
+            *cls.__fields__.keys(),
             "start_date",
             "end_date",
             "themes",
+            "model",
         ]
         for key in kwargs:
             if key not in allowed_search_fields:
@@ -806,7 +699,10 @@ class Document(Resource, MatchingMixin, HydrateMixin, TimestampsMixin):
 
         # Merge fields
         for key, value in unhydrated_fields.items():
-            if hydrated_fields.get(key) is UnhydratedField:
+            if (
+                hydrated_fields.get(key) is None
+                and unhydrated_fields.get(key) is not None
+            ):
                 hydrated_fields[key] = value
 
         # Re-initialize the object.
@@ -818,64 +714,6 @@ class Document(Resource, MatchingMixin, HydrateMixin, TimestampsMixin):
             [translation.hydrate() for translation in self.translations]
             [media_file.hydrate() for media_file in self.media_files]
             [collection.hydrate() for collection in self.collections]
-
-    def _parse_child_records(self):
-        child_fields = {
-            "subjects": Subject,
-            "transcripts": Transcript,
-            "media_files": MediaFile,
-            "languages": Language,
-            "creators": Contributor,
-            "collections": Collection,
-            "attachments": Document,
-            "links": Document,
-            "publishers": Publisher,
-            "translations": Translation,
-            "contributors": Contributor,
-            "original_coverages": Coverage,
-            "repositories": Repository,
-            "classifications": Classification,
-            "donors": Donor,
-            "type": Type,
-            "rights": Right,
-        }
-
-        # If we are dealing with an unhydrated record, don't attempt to process child records.
-        for field in child_fields:
-            if self.__getattribute__(field) is UnhydratedField:
-                continue
-
-            # If we are dealing with a dict, parse it and update self.
-            elif isinstance(self.__getattribute__(field), dict):
-                parsed_resource = child_fields[field](**self.__getattribute__(field))
-                setattr(self, field, parsed_resource)
-
-            # Rights are the only field that isn't a list, so we have special handling here to bail out of loop.
-            elif isinstance(self.__getattribute__(field), Right):
-                continue
-
-            # # If record is hydrated, transform child records to appropriate model.
-            # Check if list is empty, skip if yes.
-            elif len(self.__getattribute__(field)) == 0:
-                pass
-
-            # If field is a list of dicts, transform those dicts to models and update self.
-            else:
-                sample_resource = self.__getattribute__(field)[0]
-                if isinstance(sample_resource, dict):
-                    parsed_resources = [
-                        child_fields[field](**resource)
-                        for resource in self.__getattribute__(field)
-                    ]
-                    setattr(self, field, parsed_resources)
-
-    @staticmethod
-    def _parse_date_range_start(doc_date: str) -> date:
-        """Transform a DA-style date string to a Python datetime."""
-        year = int(doc_date[:4])
-        month = int(doc_date[4:6])
-        day = int(doc_date[-2:])
-        return date(year, month, day)
 
     @staticmethod
     def _process_date_searches(query: dict) -> dict:
@@ -904,12 +742,6 @@ class Document(Resource, MatchingMixin, HydrateMixin, TimestampsMixin):
                 logging.error("[!] Invalid date string! Format is: YYYYMMDD")
                 raise exceptions.MalformedDateSearch
 
-            # If something else passed as keyword, bail out.
-            elif not (isinstance(search_date, str) or isinstance(search_date, date)):
-                logging.error("[!] Dates must be type str or datetime.date")
-                raise exceptions.MalformedDateSearch
-
-        # Return the reformatted query
         return query
 
     @staticmethod
@@ -952,7 +784,7 @@ class Document(Resource, MatchingMixin, HydrateMixin, TimestampsMixin):
         for term in ["language", "translation", "theme"]:
             if term in query.keys():
                 if len(query[term]) > 1:
-                    logging.error(f"[!] Cannot filter for more than one {term}")
+                    logging.error(f"[!] Cannot filter for more than one %s", term)
                     raise exceptions.InvalidSearchFieldError
                 # Pull out the singleton.
                 query[term] = query[term][0]
@@ -991,7 +823,6 @@ class Document(Resource, MatchingMixin, HydrateMixin, TimestampsMixin):
             return query
 
 
-@dataclass(eq=False)
 class Theme(Resource, HydrateMixin):
     """
     A parent container for collections on a single geopolitical topic.
@@ -1015,31 +846,19 @@ class Theme(Resource, HydrateMixin):
     slug: str
 
     # Optional Fields
-    title: Union[str, UnhydratedField] = UnhydratedField
-    value: Union[str, UnhydratedField] = UnhydratedField
-    description: Union[str, UnhydratedField] = UnhydratedField
-    main_src: Union[str, UnhydratedField] = UnhydratedField
-    uri: Union[str, UnhydratedField] = UnhydratedField
-    featured_resources: Union[List[dict], UnhydratedField] = UnhydratedField
-    has_map: Union[str, UnhydratedField] = UnhydratedField
-    has_timeline: Union[str, UnhydratedField] = UnhydratedField
-    featured_collections: Union[List[Collection], UnhydratedField] = UnhydratedField
-    dates_with_events: Union[list, UnhydratedField] = UnhydratedField
+    title: Optional[str] = None
+    value: Optional[str] = None
+    description: Optional[str] = None
+    main_src: Optional[str] = None
+    uri: Optional[str] = None
+    featured_resources: Optional[List[dict]] = None
+    has_map: Optional[str] = None
+    has_timeline: Optional[str] = None
+    featured_collections: Optional[List[Collection]] = None
+    dates_with_events: Optional[list] = None
 
     # Private fields.
-    endpoint: str = "theme"
-
-    def __post_init__(self):
-        """Parse out any child collections that were passed"""
-        if self.featured_collections is not UnhydratedField:
-            parsed_collections = []
-            for collection in self.featured_collections:
-                if isinstance(collection, Collection):
-                    parsed_collections.append(collection)
-                else:
-                    parsed_collections.append(Collection(**collection))
-
-            self.featured_collections = parsed_collections
+    endpoint: ClassVar[str] = "theme"
 
     def pull(self):
         """

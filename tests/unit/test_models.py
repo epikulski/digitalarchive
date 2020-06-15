@@ -1,6 +1,7 @@
 """Test all DA models"""
 # pylint: disable = missing-docstring, no-self-use, too-few-public-methods
 import json
+import random
 import unittest.mock
 from datetime import date, datetime
 
@@ -235,7 +236,7 @@ class TestDocument:
             source_created_at="2019-10-26 16:12:00",
             source_updated_at="2019-10-26 16:12:00",
             first_published_at="2019-10-26 16:12:00",
-            pdf_generated_at="test_pdf_date",
+            pdf_generated_at="2012-10-26 16:12:00",
         )
 
         assert hydrated_doc == unhydrated_doc
@@ -332,10 +333,12 @@ class TestDocument:
     @unittest.mock.patch("digitalarchive.models.Document.pull")
     def test_hydrate_recursive(self, mock_pull):
         """Check that recursion logic fires when parameter is enabled."""
-        mock_transcript = unittest.mock.MagicMock()
-        mock_translation = unittest.mock.MagicMock()
-        mock_media_file = unittest.mock.MagicMock()
-        mock_collection = unittest.mock.MagicMock()
+        mock_transcript = unittest.mock.create_autospec(models.Transcript, instance=True)
+        mock_translation = unittest.mock.create_autospec(models.Translation, instance=True)
+        mock_media_file = unittest.mock.create_autospec(models.MediaFile, instance=True)
+        mock_collection = unittest.mock.create_autospec(models.Collection, instance=True)
+        for mock in [mock_transcript, mock_translation, mock_media_file, mock_collection]:
+            mock.copy.return_value = mock
         doc = models.Document(
             id=1,
             uri="test",
@@ -404,7 +407,7 @@ class TestDocument:
         assert isinstance(doc.subjects, list)
 
         # check that the other child records are still unhydrated.
-        assert doc.publishers is models.UnhydratedField
+        assert doc.publishers is None
 
     def test_process_related_model_searches_languages(self):
         test_language = models.Language(id="1")
@@ -426,8 +429,16 @@ class TestDocument:
     def test_process_date_search_invalid_date_obj(self):
         with pytest.raises(exceptions.MalformedDateSearch):
             models.Document._process_date_searches(
-                {"start_date": models.UnhydratedField}
+                {"start_date": "BADDATE"}
             )
+
+    def test_process_date_search_none_date(self):
+        result = models.Document._process_date_searches(
+            {"start_date": None, "end_date": None}
+        )
+        for value in result.values():
+            assert value is None
+
 
     def test_process_related_model_searches_too_many_params(self):
         with pytest.raises(exceptions.InvalidSearchFieldError):
@@ -435,19 +446,8 @@ class TestDocument:
                 {"languages": [unittest.mock.MagicMock(), unittest.mock.MagicMock()]}
             )
 
-    def test_to_json(self):
+    def test_to_json(self, mock_collection, mock_transcript):
         """Test serialization of Document instances."""
-        mock_transcript = unittest.mock.MagicMock()
-        mock_translation = unittest.mock.MagicMock()
-        mock_media_file = unittest.mock.MagicMock()
-        mock_collection = models.Collection(
-            id=1,
-            name="test",
-            slug="test",
-            source_created_at="2019-10-26 15:43:11",
-            source_updated_at="2019-10-26 15:43:11",
-            first_published_at="2019-10-26 15:43:11",
-        )
 
         doc = models.Document(
             id=1,
@@ -462,14 +462,19 @@ class TestDocument:
             first_published_at="2019-10-26 16:12:00",
             date_range_start="20191026",
             transcripts=[mock_transcript],
-            translations=[mock_translation],
-            media_files=[mock_media_file],
             collections=[mock_collection],
         )
 
-        reloaded_dict = json.loads(doc.to_json())
-        # Check that the subfields were properly parsed.
-        assert reloaded_dict["collections"][0]["main_src"] == "Unhydrated Field"
+        doc_json = doc.json()
+        reloaded_doc = models.Document(**json.loads(doc_json))
+        for field in doc.__fields__:
+            assert getattr(doc, field) == getattr(reloaded_doc, field)
+
+        for field in doc.transcripts[0].__fields__:
+            assert getattr(reloaded_doc.transcripts[0], field) == getattr(doc.transcripts[0], field)
+
+        for field in doc.collections[0].__fields__:
+            assert getattr(reloaded_doc.collections[0], field) == getattr(doc.collections[0], field)
 
 class TestAsset:
     def test_init(self):
@@ -487,10 +492,10 @@ class TestAsset:
         )
 
         # Make sure url, raw, pdf, html exist but are empty.
-        assert test_asset.url is models.UnhydratedField
-        assert test_asset.raw is models.UnhydratedField
-        assert test_asset.pdf is models.UnhydratedField
-        assert test_asset.html is models.UnhydratedField
+        assert test_asset.url is None
+        assert test_asset.raw is None
+        assert test_asset.pdf is None
+        assert test_asset.html is None
 
 
 class TestTranscript:
@@ -565,8 +570,8 @@ class TestTranscript:
         mock_requests.get.assert_called()
 
         # Make sure pdf and html are blank.
-        assert mock_transcript.html is models.UnhydratedField
-        assert mock_transcript.pdf is models.UnhydratedField
+        assert mock_transcript.html is None
+        assert mock_transcript.pdf is None
 
     @unittest.mock.patch("digitalarchive.models.api.SESSION")
     def test_hydrate_server_error(self, mock_requests, mock_transcript):
