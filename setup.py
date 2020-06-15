@@ -17,7 +17,7 @@ DESCRIPTION = "A python client for the Wilson Center Digital Archive API."
 URL = "https://github.com/epikulski/digitalarchive"
 EMAIL = "epikulsk@gmail.com"
 AUTHOR = "Evan Pikulski"
-REQUIRES_PYTHON = ">=3.7.0"
+REQUIRES_PYTHON = ">=3.6.0"
 VERSION = "0.1.10"
 
 # Required 3rd party libraries.
@@ -110,6 +110,7 @@ setup(
         "License :: OSI Approved :: MIT License",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: Implementation :: CPython",
