@@ -38,6 +38,7 @@ class ResourceMatcher:
         :param kwargs: Search keywords to match on.
         """
         self.model = resource_model
+        self.model.update_forward_refs()
         self.query = kwargs
         self.list: Generator[models.Resource, None, None]
         self.count: int

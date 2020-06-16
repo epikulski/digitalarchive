@@ -11,7 +11,7 @@ Full documentation at: <https://digitalarchive.readthedocs.io/en/latest/>
 :license: MIT, see LICENSE for more details.
 """
 # __init__.py
-__version__ = "0.1.10"
+__version__ = "0.1.11"
 
 # Import all DA models for convenience.
 from .models import (

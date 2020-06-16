@@ -58,19 +58,16 @@ class TestDocument:
         record = records[0]
 
         # Check that fields start unhydrated.
-        assert record.translations is digitalarchive.models.UnhydratedField
-        assert record.transcripts is digitalarchive.models.UnhydratedField
+        assert record.translations is None
+        assert record.transcripts is None
         record.hydrate()
 
         # Check that expected fields were hydrated.
         assert len(record.translations) != 0
         assert len(record.transcripts) != 0
 
-        for field in record.__dataclass_fields__.keys():
-            assert (
-                record.__getattribute__(field)
-                is not digitalarchive.models.UnhydratedField
-            )
+        for field in [field for field in record.__fields__.keys() if field != "main_src"]:
+            assert record.__getattribute__(field) is not None
 
         for translation in record.translations:
             assert isinstance(translation, digitalarchive.models.Translation)
@@ -91,11 +88,8 @@ class TestDocument:
 
         # Make sure fields of a subordinate record were hydrated.
         for translation in record.translations:
-            for key in translation.__dataclass_fields__.keys():
-                assert (
-                    getattr(translation, key)
-                    is not digitalarchive.models.UnhydratedField
-                )
+            for key in [key for key in translation.__fields__.keys() if key != "pdf"]:  # PDF is legitimately none in this case.
+                assert getattr(translation, key) is not None
 
     def test_hydrate_resultset(self):
         results = digitalarchive.Document.match(description="soviet eurasia")
@@ -105,8 +99,9 @@ class TestDocument:
 
         # Check there are no unhydrated fields in the resultant records.
         for result in results:
-            for key in result.__dataclass_fields__.keys():
-                assert getattr(result, key) is not digitalarchive.models.UnhydratedField
+            for key in result.__fields__.keys():
+                if key != "main_src":
+                    assert getattr(result, key) is not None
 
     def test_hydrate_resultset_recursive(self):
         """Hydrate a resultset and confirm child records of results are not dehydrated."""
@@ -115,18 +110,20 @@ class TestDocument:
         results = results.all()
         for result in results:
             for translation in result.translations:
-                for key in translation.__dataclass_fields__.keys():
-                    assert (
-                        getattr(translation, key)
-                        is not digitalarchive.models.UnhydratedField
-                    )
+                for key in [
+                    key
+                    for key in translation.__fields__.keys()
+                    if key not in ["pdf", "html"]
+                ]:
+                    assert getattr(translation, key) is not None
 
             for transcript in result.transcripts:
-                for key in transcript.__dataclass_fields__.keys():
-                    assert (
-                        getattr(transcript, key)
-                        is not digitalarchive.models.UnhydratedField
-                    )
+                for key in [
+                    key
+                    for key in transcript.__fields__.keys()
+                    if key not in ["pdf", "html"]
+                ]:
+                    assert getattr(transcript, key) is not None
 
     def test_date_range_str(self):
         results = digitalarchive.Document.match(
@@ -313,15 +310,15 @@ class TestCollection:
         record = results.first()
 
         # Check that unhydrated fields are none.
-        assert record.first_published_at is digitalarchive.models.UnhydratedField
-        assert record.source_created_at is digitalarchive.models.UnhydratedField
+        assert record.first_published_at is None
+        assert record.source_created_at is None
 
         # Hydrate the record
         record.hydrate()
 
         # Check that fields are now populated.
-        assert record.first_published_at is not digitalarchive.models.UnhydratedField
-        assert record.source_created_at is not digitalarchive.models.UnhydratedField
+        assert record.first_published_at is not None
+        assert record.source_created_at is not None
 
     def test_hydrate_resultset(self):
         results = digitalarchive.Collection.match(description="europe")
@@ -334,9 +331,9 @@ class TestCollection:
 
         # Check that docs are hydrated.
         for result in results:
-            assert result.uri is not digitalarchive.models.UnhydratedField
-            assert result.no_of_documents is not digitalarchive.models.UnhydratedField
-            assert result.description is not digitalarchive.models.UnhydratedField
+            assert result.uri is not None
+            assert result.no_of_documents is not None
+            assert result.description is not None
 
 
 class TestTranslation:
@@ -347,15 +344,15 @@ class TestTranslation:
         test_translation = test_doc.translations[0]
 
         # Check expected fields are unhydrated
-        assert test_translation.html is digitalarchive.models.UnhydratedField
-        assert test_translation.raw is digitalarchive.models.UnhydratedField
+        assert test_translation.html is None
+        assert test_translation.raw is None
 
         # Hydrate the translation.
         test_translation.hydrate()
 
         # Confirm html fields are now present.
-        assert test_translation.html is not digitalarchive.models.UnhydratedField
-        assert test_translation.raw is not digitalarchive.models.UnhydratedField
+        assert test_translation.html is not None
+        assert test_translation.raw is not None
 
 
 class TestSubject:
@@ -387,18 +384,15 @@ class TestSubject:
         test_subject = test_doc.subjects[0]
 
         # Check record is unhydrated
-        assert test_subject.uri is digitalarchive.models.UnhydratedField
-        assert test_subject.value is digitalarchive.models.UnhydratedField
+        assert test_subject.uri is None
+        assert test_subject.value is None
 
         # Hydrate the record
         test_subject.hydrate()
 
         # Check new fields are there.
-        for field in test_subject.__dataclass_fields__:
-            assert (
-                test_subject.__getattribute__(field)
-                is not digitalarchive.models.UnhydratedField
-            )
+        for field in test_subject.__fields__:
+            assert test_subject.__getattribute__(field) is not None
 
     def test_hydrate_resultset(self):
         results = digitalarchive.Subject.match(name="Burma")
@@ -411,10 +405,10 @@ class TestSubject:
 
         # Check new fields are there.
         for result in results:
-            for field in result.__dataclass_fields__:
+            for field in result.__fields__:
                 assert (
                     result.__getattribute__(field)
-                    is not digitalarchive.models.UnhydratedField
+                    is not None
                 )
 
 
@@ -480,18 +474,15 @@ class TestContributor:
         test_contributor = test_doc.contributors[0]
 
         # make sure they start blank
-        assert test_contributor.uri is digitalarchive.models.UnhydratedField
-        assert test_contributor.value is digitalarchive.models.UnhydratedField
+        assert test_contributor.uri is None
+        assert test_contributor.value is None
 
         # Hydrate the model
         test_contributor.hydrate()
 
         # Check new fields are there.
-        for field in test_contributor.__dataclass_fields__:
-            assert (
-                test_contributor.__getattribute__(field)
-                is not digitalarchive.models.UnhydratedField
-            )
+        for field in test_contributor.__fields__:
+            assert test_contributor.__getattribute__(field) is not None
 
 
 class TestCoverage:
@@ -520,15 +511,15 @@ class TestCoverage:
         coverage = results.first()
 
         # Confirm fields start dehydrated
-        assert coverage.children is digitalarchive.models.UnhydratedField
-        assert coverage.parent is digitalarchive.models.UnhydratedField
+        assert coverage.children is None
+        assert coverage.parent is None
 
         # Hydrate the field
         coverage.hydrate()
 
         # Check fields are now hydrated
-        assert coverage.children is not digitalarchive.models.UnhydratedField
-        assert coverage.parent is not digitalarchive.models.UnhydratedField
+        assert coverage.children is not None
+        assert coverage.parent is None
 
         for coverage in coverage.children:
             assert isinstance(coverage, digitalarchive.Coverage)
@@ -536,18 +527,16 @@ class TestCoverage:
     def test_hydrate_resultset(self):
         results = digitalarchive.Coverage.match(name="Africa")
         results.hydrate()
-        coverage = list(results.all())
+        coverages = list(results.all())
 
         # Check that there are no unhydrated fields in the resultant records.
-        for coverage in coverage:
-            assert coverage.parent is not digitalarchive.models.UnhydratedField
-            assert coverage.children is not digitalarchive.models.UnhydratedField
+        for coverage in coverages:
+            assert coverage.parent is not None or coverage.children is not None
+
 
 class TestTheme:
-
     def test_hydrate(self):
         theme = digitalarchive.models.Theme(id="1", slug="cold-war-history")
         theme.hydrate()
         assert theme.title == "Cold War History"
         assert theme.slug == "cold-war-history"
-
