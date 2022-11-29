@@ -1,7 +1,6 @@
 Digital Archive
 ===============
 ![PyPI](https://img.shields.io/pypi/v/digitalarchive)
-[![Build Status](https://travis-ci.com/epikulski/digitalarchive.svg?token=DF1254Zmz3xWHziFRx2x&branch=master)](https://travis-ci.com/epikulski/digitalarchive)
 [![codecov](https://codecov.io/gh/epikulski/digitalarchive/branch/master/graph/badge.svg?token=UOd5l8vX6b)](https://codecov.io/gh/epikulski/digitalarchive)
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/digitalarchive)
 [![Documentation Status](https://readthedocs.org/projects/digitalarchive/badge/?version=latest)](https://digitalarchive.readthedocs.io/en/latest/?badge=latest)
