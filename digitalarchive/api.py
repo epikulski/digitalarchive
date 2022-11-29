@@ -9,13 +9,16 @@ import logging
 from typing import Optional, Dict
 
 # 3rd Party Libraries
-import requests
+import httpx
 
 # Library modules
 import digitalarchive.exceptions as exceptions
 
 # Global Variables
-SESSION = requests.session()
+# FIXME: Turn TLS verification back on.
+# Server for digitalarchive.wilsoncenter.org is missing the intermediate cert in chain, and that intermediate cert isn't
+# in Certifi. Because Certifi doesn't do AIA, httpx fails to set up a TLS connection.
+SESSION = httpx.Client(verify=False)
 
 
 def search(model: str, params: Optional[Dict] = None) -> dict:

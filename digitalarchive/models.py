@@ -6,12 +6,10 @@ The module provides documented models and an ORM for interacting with the DA API
 from __future__ import annotations
 
 # Standard Library
-import dataclasses
-import json
 import logging
 import copy
 from datetime import datetime, date
-from typing import List, Any, Optional, Union, Dict, ClassVar
+from typing import List, Any, Optional, Union, ClassVar
 from abc import ABC
 
 # 3rd Party Libraries
@@ -185,9 +183,7 @@ class Asset(Resource, ABC, HydrateMixin):
 
         else:
             raise exceptions.APIServerError(
-                f"[!] Hydrating asset ID#: %s failed with code: %s",
-                self.id,
-                response.status_code,
+                f"[!] Hydrating asset ID#: {self.id} failed with code: {response.status_code}",
             )
 
 
@@ -688,7 +684,7 @@ class Document(Resource, MatchingMixin, HydrateMixin):
         Downloads the complete version of the Document with metadata for any related objects.
 
         Args:
-            recurse (bool): If true, also hydrate subordinate and related records records.
+            recurse (bool): If true, also hydrate subordinate and related records.
         """
         # Preserve unhydrated fields.
         unhydrated_fields = copy.copy(self.__dict__)
@@ -784,7 +780,7 @@ class Document(Resource, MatchingMixin, HydrateMixin):
         for term in ["language", "translation", "theme"]:
             if term in query.keys():
                 if len(query[term]) > 1:
-                    logging.error(f"[!] Cannot filter for more than one %s", term)
+                    logging.error("[!] Cannot filter for more than one %s", term)
                     raise exceptions.InvalidSearchFieldError
                 # Pull out the singleton.
                 query[term] = query[term][0]

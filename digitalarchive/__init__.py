@@ -14,7 +14,7 @@ Full documentation at: <https://digitalarchive.readthedocs.io/en/latest/>
 __version__ = "0.1.11"
 
 # Import all DA models for convenience.
-from .models import (
+from .models import (  # noqa: F401
     Subject,
     Contributor,
     Coverage,
