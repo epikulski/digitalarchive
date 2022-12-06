@@ -1,12 +1,14 @@
+**This client no longer functions -- the Wilson Center has disabled API access to the Digital Archive** 
+
+
+
+
 Digital Archive
 ===============
 ![PyPI](https://img.shields.io/pypi/v/digitalarchive)
 [![codecov](https://codecov.io/gh/epikulski/digitalarchive/branch/master/graph/badge.svg?token=UOd5l8vX6b)](https://codecov.io/gh/epikulski/digitalarchive)
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/digitalarchive)
 [![Documentation Status](https://readthedocs.org/projects/digitalarchive/badge/?version=latest)](https://digitalarchive.readthedocs.io/en/latest/?badge=latest)
-
-
-**This client no longer functions -- the Wilson Center has disabled API access to the Digital Archive** 
 
 
 A Python client for the Wilson Center's [Digital Archive](https://digitalarchive.wilsoncenter.org) ("DA") of historical primary sources. This library provides an ORM for searching and accessing documents and other resources in the Digital Archive. 
